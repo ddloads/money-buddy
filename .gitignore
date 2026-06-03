@@ -23,6 +23,7 @@ build/
 .env
 backend/.env
 *.env.local
+envinfo.txt
 
 # Uploads (user data, not code)
 uploads/*

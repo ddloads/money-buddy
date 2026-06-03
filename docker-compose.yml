@@ -3,8 +3,36 @@ version: "3.9"
 # ─── Money Buddy ─────────────────────────────────────────────────────────────
 # Portainer stack deployment
 # Set these env vars in Portainer → Stack → Environment variables:
-#   SECRET_KEY, POSTGRES_PASSWORD, SMTP_PASSWORD, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+#   SECRET_KEY, POSTGRES_PASSWORD, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# Optional external SMTP override:
+#   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM_EMAIL, SMTP_TLS
+#
+# Default SMTP is a local Mailpit server. It captures reminder emails for testing
+# and exposes its inbox at http://<docker-vm>:8025. It does NOT deliver mail to
+# external inboxes unless replaced with a real SMTP relay/provider.
 # ─────────────────────────────────────────────────────────────────────────────
+
+x-backend-environment: &backend-environment
+  DATABASE_URL: postgresql+asyncpg://moneybuddy:${POSTGRES_PASSWORD:-changeme123}@db:5432/moneybuddy
+  SECRET_KEY: ${SECRET_KEY:-please-change-this-secret-key-in-production}
+  ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+  ALGORITHM: HS256
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost/api/auth/google/callback}
+  SMTP_HOST: ${SMTP_HOST:-mailpit}
+  SMTP_PORT: ${SMTP_PORT:-1025}
+  SMTP_USER: ${SMTP_USER:-moneybuddy}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-moneybuddy}
+  SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-moneybuddy@mb.ddsplayground.com}
+  SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Money Buddy}
+  SMTP_TLS: ${SMTP_TLS:-false}
+  APP_NAME: Money Buddy
+  FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+  UPLOAD_DIR: /uploads
+  MAX_UPLOAD_SIZE_MB: 10
+  REMINDER_DAYS_BEFORE: ${REMINDER_DAYS_BEFORE:-3}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:3000}
 
 services:
 
@@ -26,6 +54,24 @@ services:
     networks:
       - money-buddy-net
 
+  # ── Local SMTP capture server ─────────────────────────────────────────────
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+    ports:
+      - "${MAILPIT_PORT:-8025}:8025"
+    networks:
+      - money-buddy-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8025/api/v1/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
   # ── FastAPI Backend ──────────────────────────────────────────────────────
   backend:
     build:
@@ -35,25 +81,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql+asyncpg://moneybuddy:${POSTGRES_PASSWORD:-changeme123}@db:5432/moneybuddy
-      SECRET_KEY: ${SECRET_KEY:-please-change-this-secret-key-in-production}
-      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
-      ALGORITHM: HS256
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost/api/auth/google/callback}
-      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_FROM: ${SMTP_FROM:-noreply@moneybuddy.local}
-      APP_NAME: Money Buddy
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
-      UPLOAD_DIR: /uploads
-      MAX_UPLOAD_SIZE_MB: 10
-      REMINDER_DAYS_BEFORE: 3
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:3000}
+      mailpit:
+        condition: service_started
+    environment: *backend-environment
     volumes:
       - uploads:/uploads
     networks:
@@ -64,6 +94,28 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # ── Daily reminder worker ────────────────────────────────────────────────
+  reminder-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment: *backend-environment
+    volumes:
+      - uploads:/uploads
+    networks:
+      - money-buddy-net
+    command: >
+      sh -c 'while true; do
+        python -c "import asyncio; from app.services.reminders import check_and_send_reminders; print(asyncio.run(check_and_send_reminders()), flush=True)";
+        sleep $${REMINDER_INTERVAL_SECONDS:-86400};
+      done'
 
   # ── React Frontend (nginx) ───────────────────────────────────────────────
   frontend:

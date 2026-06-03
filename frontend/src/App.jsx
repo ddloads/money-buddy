@@ -9,6 +9,7 @@ import Bills from './pages/Bills'
 import BillDetail from './pages/BillDetail'
 import Categories from './pages/Categories'
 import Settings from './pages/Settings'
+import GoogleCallback from './pages/GoogleCallback'
 
 // Protected route wrapper
 function ProtectedRoute({ children }) {
@@ -54,6 +55,9 @@ export default function App() {
           </PublicRoute>
         }
       />
+
+      {/* Google OAuth callback — public, no redirect wrapper needed */}
+      <Route path="/auth/callback" element={<GoogleCallback />} />
 
       {/* Protected routes */}
       <Route

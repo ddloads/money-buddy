@@ -95,8 +95,7 @@ async def google_login(request: Request):
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Google OAuth is not configured",
         )
-    redirect_uri = settings.GOOGLE_REDIRECT_URI
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    return await oauth.google.authorize_redirect(request, settings.GOOGLE_REDIRECT_URI)
 
 
 @router.get("/google/callback")
@@ -142,8 +141,10 @@ async def google_callback(request: Request, db: AsyncSession = Depends(get_db)):
             logger.info("New Google user created: %s (id=%s)", user.email, user.id)
 
     token = create_access_token(subject=user.id)
-    # In a real SPA you'd redirect to the frontend with the token
-    return {"access_token": token, "token_type": "bearer"}
+    # Redirect the browser back to the frontend SPA with the token as a query param.
+    # The frontend reads it from the URL, stores it in Zustand, then removes it from history.
+    frontend_url = settings.FRONTEND_URL.rstrip("/")
+    return RedirectResponse(url=f"{frontend_url}/auth/callback?token={token}")
 
 
 @router.get("/me", response_model=UserRead)

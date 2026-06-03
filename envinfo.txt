@@ -1,0 +1,4 @@
+POSTGRES_PASSWORD - y77odoSO3VEw
+SECRET_KEY - wuh!3%rZebN0YZqmrv4!J794Rg@xf4prxKy^6ulS9@MCw&3m55vzWzUXT7pofY5D
+app_port - 3107
+FRONTEND_URL - https://mb.ddsplayground.com

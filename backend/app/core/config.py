@@ -32,10 +32,13 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "/uploads"
     MAX_UPLOAD_SIZE_MB: int = 10
 
+    # ── Frontend ──────────────────────────────────────────────────────────────
+    FRONTEND_URL: str = "http://localhost:3000"
+
     # ── Google OAuth ──────────────────────────────────────────────────────────
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
-    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/auth/google/callback"
+    GOOGLE_REDIRECT_URI: str = "http://localhost/api/auth/google/callback"
 
     # ── Email / SMTP ──────────────────────────────────────────────────────────
     SMTP_HOST: str = "smtp.gmail.com"

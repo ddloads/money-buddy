@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
@@ -43,6 +44,9 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
         lifespan=lifespan,
     )
+
+    # ── Session (required for Google OAuth state) ─────────────────────────────
+    app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
 
     # ── CORS ─────────────────────────────────────────────────────────────────
     app.add_middleware(

@@ -67,9 +67,13 @@ def send_reminder_email(
     Returns:
         True if sent successfully, False otherwise.
     """
-    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        logger.warning("SMTP credentials not configured — skipping reminder email to %s", recipient_email)
+    smtp_host = settings.SMTP_HOST.strip()
+    if not smtp_host:
+        logger.warning("SMTP host not configured — skipping reminder email to %s", recipient_email)
         return False
+
+    smtp_user = settings.SMTP_USER.strip()
+    smtp_password = settings.SMTP_PASSWORD
 
     subject = subject or f"⏰ Reminder: '{bill_name}' is due on {due_date}"
     html_body = _build_reminder_html(recipient_name, bill_name, amount, due_date)
@@ -88,12 +92,13 @@ def send_reminder_email(
 
     try:
         context = ssl.create_default_context()
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
+        with smtplib.SMTP(smtp_host, settings.SMTP_PORT, timeout=15) as server:
             if settings.SMTP_TLS:
                 server.ehlo()
                 server.starttls(context=context)
                 server.ehlo()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            if smtp_user and smtp_password:
+                server.login(smtp_user, smtp_password)
             server.sendmail(msg["From"], [recipient_email], msg.as_string())
         logger.info("Reminder email sent to %s for bill '%s'", recipient_email, bill_name)
         return True

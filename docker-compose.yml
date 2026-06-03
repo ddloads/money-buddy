@@ -7,9 +7,9 @@ version: "3.9"
 # Optional external SMTP override:
 #   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM_EMAIL, SMTP_TLS
 #
-# Default SMTP is a local Mailpit server. It captures reminder emails for testing
-# and exposes its inbox at http://<docker-vm>:8025. It does NOT deliver mail to
-# external inboxes unless replaced with a real SMTP relay/provider.
+# Default SMTP is an internal Postfix relay container. It accepts mail only on
+# the private Docker network and attempts direct external delivery over port 25.
+# Reliable inbox delivery still depends on DNS/SPF/DKIM/DMARC/reverse-DNS.
 # ─────────────────────────────────────────────────────────────────────────────
 
 x-backend-environment: &backend-environment
@@ -20,10 +20,10 @@ x-backend-environment: &backend-environment
   GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
   GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
   GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost/api/auth/google/callback}
-  SMTP_HOST: ${SMTP_HOST:-mailpit}
-  SMTP_PORT: ${SMTP_PORT:-1025}
-  SMTP_USER: ${SMTP_USER:-moneybuddy}
-  SMTP_PASSWORD: ${SMTP_PASSWORD:-moneybuddy}
+  SMTP_HOST: ${SMTP_HOST:-smtp-relay}
+  SMTP_PORT: ${SMTP_PORT:-25}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
   SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-moneybuddy@mb.ddsplayground.com}
   SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Money Buddy}
   SMTP_TLS: ${SMTP_TLS:-false}
@@ -54,23 +54,22 @@ services:
     networks:
       - money-buddy-net
 
-  # ── Local SMTP capture server ─────────────────────────────────────────────
-  mailpit:
-    image: axllent/mailpit:latest
+  # ── Internal SMTP relay for outgoing reminders ───────────────────────────
+  smtp-relay:
+    image: boky/postfix:latest
     restart: unless-stopped
+    hostname: smtp
+    domainname: mb.ddsplayground.com
     environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: "true"
-      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
-    ports:
-      - "${MAILPIT_PORT:-8025}:8025"
+      HOSTNAME: smtp.mb.ddsplayground.com
+      ALLOWED_SENDER_DOMAINS: mb.ddsplayground.com
+      POSTFIX_myhostname: smtp.mb.ddsplayground.com
+      POSTFIX_myorigin: mb.ddsplayground.com
+      POSTFIX_inet_protocols: ipv4
+      POSTFIX_smtp_tls_security_level: may
+      POSTFIX_smtp_tls_loglevel: "1"
     networks:
       - money-buddy-net
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8025/api/v1/info"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
   # ── FastAPI Backend ──────────────────────────────────────────────────────
   backend:
@@ -81,7 +80,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      mailpit:
+      smtp-relay:
         condition: service_started
     environment: *backend-environment
     volumes:
@@ -104,7 +103,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      mailpit:
+      smtp-relay:
         condition: service_started
     environment: *backend-environment
     volumes:

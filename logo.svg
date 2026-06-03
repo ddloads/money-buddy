@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <!-- Wallet body gradient -->
+    <linearGradient id="walletGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981"/>
+      <stop offset="100%" style="stop-color:#059669"/>
+    </linearGradient>
+    <!-- Wallet flap gradient -->
+    <linearGradient id="flapGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#34d399"/>
+      <stop offset="100%" style="stop-color:#10b981"/>
+    </linearGradient>
+    <!-- Coin gradient -->
+    <linearGradient id="coinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <!-- Glow filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+    <!-- Coin shadow -->
+    <filter id="coinShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    <!-- Clip for rounded rect -->
+    <clipPath id="walletClip">
+      <rect x="96" y="160" width="320" height="220" rx="32" ry="32"/>
+    </clipPath>
+  </defs>
+
+  <!-- ── Background circle ─────────────────────────────────────────── -->
+  <circle cx="256" cy="256" r="256" fill="url(#bgGrad)"/>
+
+  <!-- ── Subtle ring decoration ───────────────────────────────────────── -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="#10b981" stroke-width="1.5" opacity="0.15"/>
+  <circle cx="256" cy="256" r="195" fill="none" stroke="#10b981" stroke-width="1" opacity="0.08"/>
+
+  <!-- ── Wallet body ───────────────────────────────────────────────── -->
+  <rect x="96" y="175" width="320" height="210" rx="28" ry="28"
+        fill="url(#walletGrad)" filter="url(#shadow)"/>
+
+  <!-- Wallet inner highlight -->
+  <rect x="96" y="175" width="320" height="50" rx="28" ry="28"
+        fill="#34d399" opacity="0.25" clip-path="url(#walletClip)"/>
+
+  <!-- Wallet texture lines -->
+  <line x1="96" y1="230" x2="416" y2="230" stroke="#059669" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- ── Card slot area ────────────────────────────────────────────── -->
+  <rect x="112" y="242" width="180" height="30" rx="6" ry="6"
+        fill="#047857" opacity="0.6"/>
+  <rect x="120" y="250" width="80" height="6" rx="3" fill="#34d399" opacity="0.5"/>
+  <rect x="210" y="250" width="40" height="6" rx="3" fill="#34d399" opacity="0.3"/>
+  <rect x="120" y="260" width="55" height="5" rx="2.5" fill="#34d399" opacity="0.3"/>
+
+  <!-- ── Coin pocket (right side) ─────────────────────────────────── -->
+  <rect x="316" y="235" width="84" height="100" rx="14" ry="14"
+        fill="#047857" opacity="0.7"/>
+
+  <!-- ── Gold coin ─────────────────────────────────────────────────── -->
+  <circle cx="358" cy="285" r="34" fill="url(#coinGrad)" filter="url(#coinShadow)"/>
+  <!-- Coin ring -->
+  <circle cx="358" cy="285" r="27" fill="none" stroke="#fde68a" stroke-width="2.5" opacity="0.6"/>
+  <!-- Dollar sign -->
+  <text x="358" y="295" font-family="Georgia, serif" font-size="32" font-weight="bold"
+        fill="#92400e" text-anchor="middle" opacity="0.9">$</text>
+  <!-- Coin shine -->
+  <ellipse cx="348" cy="272" rx="8" ry="5" fill="#fef3c7" opacity="0.4" transform="rotate(-30 348 272)"/>
+
+  <!-- ── Friendly face on wallet ───────────────────────────────────── -->
+  <!-- Eyes -->
+  <circle cx="175" cy="200" r="9" fill="#065f46"/>
+  <circle cx="215" cy="200" r="9" fill="#065f46"/>
+  <!-- Eye shine -->
+  <circle cx="178" cy="197" r="3" fill="#ffffff" opacity="0.7"/>
+  <circle cx="218" cy="197" r="3" fill="#ffffff" opacity="0.7"/>
+  <!-- Smile -->
+  <path d="M 163 215 Q 195 238 227 215" stroke="#065f46" stroke-width="5"
+        fill="none" stroke-linecap="round"/>
+
+  <!-- ── Flying coins (decorative) ─────────────────────────────────── -->
+  <!-- Top-left coin -->
+  <circle cx="140" cy="115" r="22" fill="url(#coinGrad)" opacity="0.85" filter="url(#coinShadow)"/>
+  <circle cx="140" cy="115" r="16" fill="none" stroke="#fde68a" stroke-width="1.5" opacity="0.5"/>
+  <text x="140" y="122" font-family="Georgia, serif" font-size="16" font-weight="bold"
+        fill="#92400e" text-anchor="middle" opacity="0.9">$</text>
+
+  <!-- Top-right coin -->
+  <circle cx="372" cy="100" r="17" fill="url(#coinGrad)" opacity="0.7" filter="url(#coinShadow)"/>
+  <circle cx="372" cy="100" r="12" fill="none" stroke="#fde68a" stroke-width="1.5" opacity="0.5"/>
+  <text x="372" y="106" font-family="Georgia, serif" font-size="12" font-weight="bold"
+        fill="#92400e" text-anchor="middle" opacity="0.9">$</text>
+
+  <!-- Small coin right -->
+  <circle cx="415" cy="145" r="12" fill="url(#coinGrad)" opacity="0.55"/>
+  <text x="415" y="150" font-family="Georgia, serif" font-size="10" font-weight="bold"
+        fill="#92400e" text-anchor="middle" opacity="0.8">$</text>
+
+  <!-- ── Sparkles ───────────────────────────────────────────────────── -->
+  <!-- Top sparkle -->
+  <g transform="translate(290, 90)" opacity="0.8">
+    <line x1="0" y1="-12" x2="0" y2="12" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="-12" y1="0" x2="12" y2="0" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="-8" y1="-8" x2="8" y2="8" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+    <line x1="8" y1="-8" x2="-8" y2="8" stroke="#fbbf24" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  </g>
+  <!-- Small sparkle left -->
+  <g transform="translate(108, 148)" opacity="0.6">
+    <line x1="0" y1="-7" x2="0" y2="7" stroke="#34d399" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-7" y1="0" x2="7" y2="0" stroke="#34d399" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <!-- Tiny sparkle bottom right -->
+  <g transform="translate(400, 360)" opacity="0.5">
+    <line x1="0" y1="-6" x2="0" y2="6" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-6" y1="0" x2="6" y2="0" stroke="#fbbf24" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <!-- ── Bottom label area ─────────────────────────────────────────── -->
+  <rect x="130" y="400" width="252" height="52" rx="14" fill="#065f46" opacity="0.5"/>
+  <text x="256" y="418" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif"
+        font-size="17" font-weight="700" fill="#34d399" text-anchor="middle"
+        letter-spacing="3" opacity="0.9">MONEY BUDDY</text>
+  <text x="256" y="438" font-family="'Inter', 'Helvetica Neue', Arial, sans-serif"
+        font-size="11" font-weight="500" fill="#6ee7b7" text-anchor="middle"
+        letter-spacing="2" opacity="0.7">SMART BILL MANAGER</text>
+</svg>

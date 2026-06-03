@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="logo.svg" alt="Money Buddy Logo" width="140" height="140" />
+
 # 💰 Money Buddy
 
 **A clean, mobile-first bill management app to keep your finances organized.**

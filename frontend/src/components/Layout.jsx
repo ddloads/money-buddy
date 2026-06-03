@@ -78,7 +78,7 @@ export default function Layout() {
         {/* Logo */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">💰</span>
+            <img src="/logo.svg" alt="Money Buddy" className="h-10 w-10 flex-shrink-0" />
             <div>
               <h1 className="font-bold text-gray-900 dark:text-gray-100 leading-none">
                 Money Buddy
@@ -178,7 +178,7 @@ export default function Layout() {
             <Bars3Icon className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-lg">💰</span>
+            <img src="/logo.svg" alt="" className="h-7 w-7" />
             <span className="font-bold text-gray-900 dark:text-gray-100">Money Buddy</span>
           </div>
           <button

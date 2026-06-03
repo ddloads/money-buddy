@@ -27,7 +27,9 @@ export default function Register() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="text-6xl mb-3">💰</div>
+          <div className="flex justify-center mb-3">
+            <img src="/logo.svg" alt="Money Buddy" className="h-24 w-24 drop-shadow-lg" />
+          </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Money Buddy
           </h1>

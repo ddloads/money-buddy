@@ -123,7 +123,7 @@ async def update_bill(
     return bill
 
 
-@router.delete("/{bill_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{bill_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_bill(
     bill_id: int,
     db: AsyncSession = Depends(get_db),

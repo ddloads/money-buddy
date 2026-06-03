@@ -20,13 +20,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # ── Google OAuth client ───────────────────────────────────────────────────────
+# Endpoints are hardcoded (rather than discovered via the OpenID metadata URL)
+# so the /auth/google request never has to perform an outbound discovery fetch
+# at request time — that lazy fetch was hanging behind the Cloudflare tunnel
+# and producing 504s on the sign-in click.
 oauth = OAuth()
 if settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET:
     oauth.register(
         name="google",
         client_id=settings.GOOGLE_CLIENT_ID,
         client_secret=settings.GOOGLE_CLIENT_SECRET,
-        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
+        authorize_url="https://accounts.google.com/o/oauth2/v2/auth",
+        access_token_url="https://oauth2.googleapis.com/token",
+        userinfo_endpoint="https://openidconnect.googleapis.com/v1/userinfo",
+        jwks_uri="https://www.googleapis.com/oauth2/v3/certs",
         client_kwargs={"scope": "openid email profile"},
     )
 

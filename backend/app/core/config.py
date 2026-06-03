@@ -26,7 +26,13 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/money_buddy"
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    # Stored as a comma-separated string so pydantic-settings doesn't try to
+    # JSON-decode the env var. Access the parsed list via `cors_origins_list`.
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
     # ── File Uploads ──────────────────────────────────────────────────────────
     UPLOAD_DIR: str = "/uploads"

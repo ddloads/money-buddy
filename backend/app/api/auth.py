@@ -90,7 +90,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> di
 @router.get("/google")
 async def google_login(request: Request):
     """Initiate the Google OAuth2 flow. Redirects to Google's consent screen."""
-    if not settings.GOOGLE_CLIENT_ID:
+    if not (settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET):
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Google OAuth is not configured",
@@ -101,7 +101,7 @@ async def google_login(request: Request):
 @router.get("/google/callback")
 async def google_callback(request: Request, db: AsyncSession = Depends(get_db)):
     """Handle the Google OAuth2 callback."""
-    if not settings.GOOGLE_CLIENT_ID:
+    if not (settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET):
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Google OAuth is not configured",

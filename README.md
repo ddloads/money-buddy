@@ -96,6 +96,59 @@ Add these in the **Environment variables** section:
 | `SMTP_PASSWORD` | ☐ | SMTP password / app password | |
 | `REMINDER_DAYS_BEFORE` | ☐ | Days before due date to send reminder | `3` |
 
+
+### 🔑 Setting Up Google OAuth (Optional)
+
+Google login is optional — skip this if you only want username/password auth. If you'd like the "Login with Google" button to work, follow these steps.
+
+**1. Create a Google Cloud Project**
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Click the project dropdown at the top → **New Project**
+3. Give it a name (e.g. `Money Buddy`) and click **Create**
+
+**2. Enable the OAuth APIs**
+
+1. In your new project, go to **APIs & Services** → **Library**
+2. Search for **Google+ API** or **People API** and click **Enable**
+
+**3. Configure the OAuth Consent Screen**
+
+1. Go to **APIs & Services** → **OAuth consent screen**
+2. Select **External** → **Create**
+3. Fill in:
+   - **App name:** `Money Buddy`
+   - **User support email:** your email
+   - **Developer contact email:** your email
+4. Click **Save and Continue** through the remaining steps (Scopes, Test Users)
+5. On the **Test users** step, add your own Google account so you can test before publishing
+
+**4. Create OAuth Credentials**
+
+1. Go to **APIs & Services** → **Credentials** → **+ Create Credentials** → **OAuth client ID**
+2. Set **Application type** to **Web application**
+3. Give it a name (e.g. `Money Buddy Web`)
+4. Under **Authorized redirect URIs**, click **+ Add URI** and enter:
+   ```
+   http://YOUR-HOST:YOUR-PORT/api/auth/google/callback
+   ```
+   Replace `YOUR-HOST:YOUR-PORT` with your actual host, e.g.:
+   - Local: `http://localhost:3000/api/auth/google/callback`
+   - Home server: `http://192.168.1.100:3000/api/auth/google/callback`
+5. Click **Create**
+
+**5. Copy Your Credentials**
+
+A dialog will show your credentials — copy both values and add them to Portainer:
+
+| Portainer Variable | Where to find it |
+|---|---|
+| `GOOGLE_CLIENT_ID` | Shown as **Your Client ID** — ends in `.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | Shown as **Your Client Secret** |
+| `GOOGLE_REDIRECT_URI` | The URI you entered in step 4 above |
+
+> **Note:** While your app is in "Testing" mode on the consent screen, only accounts you added as test users can log in with Google. To allow anyone to sign in, publish the app from the OAuth consent screen page.
+
 ### 3. Deploy
 
 Click **Deploy the stack**. Portainer will clone the repo, build both images, and start all three containers (`db`, `backend`, `frontend`).

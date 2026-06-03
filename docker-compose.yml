@@ -7,9 +7,9 @@ version: "3.9"
 # Optional external SMTP override:
 #   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM_EMAIL, SMTP_TLS
 #
-# Default SMTP is an internal Postfix relay container. It accepts mail only on
-# the private Docker network and attempts direct external delivery over port 25.
-# Reliable inbox delivery still depends on DNS/SPF/DKIM/DMARC/reverse-DNS.
+# Default SMTP points at the shared Portainer stack `shared-smtp-relay` on the
+# external Docker network `smtp-relay-net`. Provider credentials are managed in
+# that standalone stack, not inside Money Buddy.
 # ─────────────────────────────────────────────────────────────────────────────
 
 x-backend-environment: &backend-environment
@@ -20,7 +20,7 @@ x-backend-environment: &backend-environment
   GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
   GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
   GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost/api/auth/google/callback}
-  SMTP_HOST: ${SMTP_HOST:-smtp-relay}
+  SMTP_HOST: ${SMTP_HOST:-shared-smtp-relay}
   SMTP_PORT: ${SMTP_PORT:-25}
   SMTP_USER: ${SMTP_USER:-}
   SMTP_PASSWORD: ${SMTP_PASSWORD:-}
@@ -54,23 +54,6 @@ services:
     networks:
       - money-buddy-net
 
-  # ── Internal SMTP relay for outgoing reminders ───────────────────────────
-  smtp-relay:
-    image: boky/postfix:latest
-    restart: unless-stopped
-    hostname: smtp
-    domainname: mb.ddsplayground.com
-    environment:
-      HOSTNAME: smtp.mb.ddsplayground.com
-      ALLOWED_SENDER_DOMAINS: mb.ddsplayground.com
-      POSTFIX_myhostname: smtp.mb.ddsplayground.com
-      POSTFIX_myorigin: mb.ddsplayground.com
-      POSTFIX_inet_protocols: ipv4
-      POSTFIX_smtp_tls_security_level: may
-      POSTFIX_smtp_tls_loglevel: "1"
-    networks:
-      - money-buddy-net
-
   # ── FastAPI Backend ──────────────────────────────────────────────────────
   backend:
     build:
@@ -80,13 +63,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      smtp-relay:
-        condition: service_started
     environment: *backend-environment
     volumes:
       - uploads:/uploads
     networks:
       - money-buddy-net
+      - smtp-relay-net
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=5).status==200 else 1)"]
       interval: 30s
@@ -103,13 +85,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      smtp-relay:
-        condition: service_started
     environment: *backend-environment
     volumes:
       - uploads:/uploads
     networks:
       - money-buddy-net
+      - smtp-relay-net
     command: >
       sh -c 'while true; do
         python -c "import asyncio; from app.services.reminders import check_and_send_reminders; print(asyncio.run(check_and_send_reminders()), flush=True)";
@@ -143,3 +124,6 @@ volumes:
 networks:
   money-buddy-net:
     driver: bridge
+  smtp-relay-net:
+    external: true
+    name: smtp-relay-net

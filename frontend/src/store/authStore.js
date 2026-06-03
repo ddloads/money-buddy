@@ -6,7 +6,7 @@ export const useAuthStore = create(
     (set, get) => ({
       user: null,
       token: null,
-      darkMode: false,
+      darkMode: true,
 
       // Set auth data after login/register
       setAuth: (user, token) => {

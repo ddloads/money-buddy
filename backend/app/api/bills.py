@@ -6,7 +6,7 @@ import os
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -123,7 +123,7 @@ async def update_bill(
     return bill
 
 
-@router.delete("/{bill_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
+@router.delete("/{bill_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_bill(
     bill_id: int,
     db: AsyncSession = Depends(get_db),

@@ -1,10 +1,11 @@
-import { format, differenceInDays, isToday, isTomorrow } from 'date-fns'
+import { differenceInDays, isToday, isTomorrow } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
 import { ClockIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import CategoryBadge from './CategoryBadge'
+import { formatBillDate, toCalendarDate } from '../utils/billDates'
 
 function DueBadge({ dateStr }) {
-  const due = new Date(dateStr)
+  const due = toCalendarDate(dateStr)
   const days = differenceInDays(due, new Date())
 
   if (isToday(due)) {
@@ -33,7 +34,7 @@ function DueBadge({ dateStr }) {
   }
   return (
     <span className="badge-gray flex-shrink-0">
-      {format(due, 'MMM d')}
+      {formatBillDate(dateStr, 'MMM d')}
     </span>
   )
 }

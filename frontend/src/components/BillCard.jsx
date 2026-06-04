@@ -1,13 +1,14 @@
-import { format, isPast, isToday, isTomorrow, differenceInDays } from 'date-fns'
+import { isPast, isToday, isTomorrow, differenceInDays } from 'date-fns'
 import { CheckCircleIcon, ClockIcon, ExclamationCircleIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 import { useNavigate } from 'react-router-dom'
 import CategoryBadge from './CategoryBadge'
+import { formatBillDate, toCalendarDate } from '../utils/billDates'
 
 function getDueStatus(dueDateStr, isPaid) {
   if (isPaid) return { label: 'Paid', color: 'green', Icon: CheckCircleSolid }
 
-  const due = new Date(dueDateStr)
+  const due = toCalendarDate(dueDateStr)
   if (isPast(due) && !isToday(due)) {
     return { label: 'Overdue', color: 'red', Icon: ExclamationCircleIcon }
   }
@@ -16,7 +17,7 @@ function getDueStatus(dueDateStr, isPaid) {
 
   const days = differenceInDays(due, new Date())
   if (days <= 7) return { label: `Due in ${days}d`, color: 'yellow', Icon: ClockIcon }
-  return { label: `Due ${format(due, 'MMM d')}`, color: 'gray', Icon: ClockIcon }
+  return { label: `Due ${formatBillDate(dueDateStr, 'MMM d')}`, color: 'gray', Icon: ClockIcon }
 }
 
 const colorMap = {

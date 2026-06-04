@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { useEffect } from 'react'
 import { useCategories } from '../hooks/useCategories'
-import { format } from 'date-fns'
+import { toDateInputValue } from '../utils/billDates'
 
 const RECURRENCE_OPTIONS = [
   { value: '', label: 'One-time' },
@@ -23,13 +23,13 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
     defaultValues: {
       name: '',
       amount: '',
-      due_date: format(new Date(), 'yyyy-MM-dd'),
       category_id: '',
       autopay_enabled: false,
       recurrence: '',
       notes: '',
       reminder_days: 3,
       ...defaultValues,
+      due_date: toDateInputValue(defaultValues?.due_date),
     },
   })
 
@@ -39,9 +39,7 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
       reset({
         name: defaultValues.name || '',
         amount: defaultValues.amount || '',
-        due_date: defaultValues.due_date
-          ? format(new Date(defaultValues.due_date), 'yyyy-MM-dd')
-          : format(new Date(), 'yyyy-MM-dd'),
+        due_date: toDateInputValue(defaultValues.due_date),
         category_id: defaultValues.category_id || defaultValues.category?.id || '',
         autopay_enabled: Boolean(defaultValues.autopay_enabled),
         recurrence: defaultValues.recurrence_interval || defaultValues.recurrence || '',

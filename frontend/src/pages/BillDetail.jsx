@@ -9,9 +9,9 @@ import {
   PhotoIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
-import { format } from 'date-fns'
 import BillForm from '../components/BillForm'
 import CategoryBadge from '../components/CategoryBadge'
+import { formatBillDate } from '../utils/billDates'
 import { normalizeBillFormData } from '../utils/billPayload'
 import {
   useBill,
@@ -161,11 +161,11 @@ export default function BillDetail({ isNew = false }) {
             {bill.is_paid ? (
               <span className="badge-green flex items-center gap-1">
                 <CheckCircleSolid className="h-3.5 w-3.5" />
-                Paid {bill.paid_date ? `on ${format(new Date(bill.paid_date), 'MMM d, yyyy')}` : ''}
+                Paid {bill.paid_date ? `on ${formatBillDate(bill.paid_date, 'MMM d, yyyy')}` : ''}
               </span>
             ) : (
               <span className="badge-yellow">
-                Due {format(new Date(bill.due_date), 'MMM d, yyyy')}
+                Due {formatBillDate(bill.due_date, 'MMM d, yyyy')}
               </span>
             )}
           </div>

@@ -27,8 +27,12 @@ function Section({ title, icon: Icon, children }) {
 
 export default function Settings() {
   const { user, darkMode, toggleDarkMode } = useAuthStore()
-  const { updateProfile, changePassword, logout } = useAuth()
+  const { updateProfile, changePassword, logout, deleteAccount } = useAuth()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  const handleNotifToggle = (key, value) => {
+    updateProfile.mutate({ [key]: value })
+  }
   const [profileSuccess, setProfileSuccess] = useState(false)
   const [passwordSuccess, setPasswordSuccess] = useState(false)
 
@@ -246,9 +250,9 @@ export default function Settings() {
       <Section title="Notifications" icon={BellIcon}>
         <div className="space-y-3">
           {[
-            { key: 'email_reminders', label: 'Email Reminders', desc: 'Get email alerts before bills are due' },
-            { key: 'overdue_alerts', label: 'Overdue Alerts', desc: 'Notify me when a bill is past due' },
-            { key: 'weekly_summary', label: 'Weekly Summary', desc: 'Receive a weekly bill summary email' },
+            { key: 'notif_email_reminders', label: 'Email Reminders', desc: 'Get email alerts before bills are due' },
+            { key: 'notif_overdue_alerts', label: 'Overdue Alerts', desc: 'Notify me when a bill is past due' },
+            { key: 'notif_weekly_summary', label: 'Weekly Summary', desc: 'Receive a weekly bill summary email' },
           ].map(({ key, label, desc }) => (
             <div key={key} className="flex items-center justify-between py-1">
               <div>
@@ -256,7 +260,12 @@ export default function Settings() {
                 <p className="text-xs text-gray-500 dark:text-gray-400">{desc}</p>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" defaultChecked className="sr-only peer" />
+                <input
+                  type="checkbox"
+                  checked={user?.[key] ?? true}
+                  onChange={(e) => handleNotifToggle(key, e.target.checked)}
+                  className="sr-only peer"
+                />
                 <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600" />
               </label>
             </div>
@@ -293,8 +302,12 @@ export default function Settings() {
               <button onClick={() => setShowDeleteConfirm(false)} className="btn-secondary flex-1 text-sm py-1.5">
                 Cancel
               </button>
-              <button className="btn-danger flex-1 text-sm py-1.5">
-                Yes, Delete My Account
+              <button
+                onClick={() => deleteAccount.mutate()}
+                disabled={deleteAccount.isPending}
+                className="btn-danger flex-1 text-sm py-1.5"
+              >
+                {deleteAccount.isPending ? 'Deleting…' : 'Yes, Delete My Account'}
               </button>
             </div>
           </div>

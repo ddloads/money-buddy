@@ -18,6 +18,9 @@ class User(Base):
     hashed_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     google_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    notif_email_reminders: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    notif_overdue_alerts: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    notif_weekly_summary: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -132,7 +132,7 @@ export default function Dashboard() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Still owed</span>
                     <span className="font-semibold text-red-500">
-                      ${parseFloat(summary?.amount_due_this_month ?? 0).toFixed(2)}
+                      ${Math.max(0, parseFloat(summary?.amount_due_this_month ?? 0) - parseFloat(summary?.amount_paid_this_month ?? 0)).toFixed(2)}
                     </span>
                   </div>
                 </div>

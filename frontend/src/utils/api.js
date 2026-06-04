@@ -48,6 +48,7 @@ export const authAPI = {
   me: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/me', data),
   changePassword: (data) => api.put('/auth/me/password', data),
+  deleteAccount: () => api.delete('/auth/me'),
   googleLogin: () => { window.location.href = '/api/auth/google' },
 }
 

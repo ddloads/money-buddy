@@ -39,6 +39,24 @@ async def lifespan(app: FastAPI):
                 "ADD COLUMN IF NOT EXISTS last_reminded_at TIMESTAMPTZ"
             )
         )
+        await conn.execute(
+            text(
+                "ALTER TABLE users "
+                "ADD COLUMN IF NOT EXISTS notif_email_reminders BOOLEAN NOT NULL DEFAULT true"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE users "
+                "ADD COLUMN IF NOT EXISTS notif_overdue_alerts BOOLEAN NOT NULL DEFAULT true"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE users "
+                "ADD COLUMN IF NOT EXISTS notif_weekly_summary BOOLEAN NOT NULL DEFAULT true"
+            )
+        )
     logger.info("Database tables ready")
 
     yield

@@ -69,6 +69,10 @@ async def check_and_send_reminders() -> dict[str, int]:
                 stats["skipped"] += 1
                 continue
 
+            if not user.notif_email_reminders:
+                stats["skipped"] += 1
+                continue
+
             due_str = bill.due_date.strftime("%B %d, %Y")
             display_name = user.username or user.email.split("@")[0]
 

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, computed_field, field_validator
 
 from app.models.bill import RecurrenceInterval
 from app.schemas.category import CategoryRead
@@ -67,6 +68,13 @@ class BillRead(BillBase):
     created_at: datetime
     updated_at: datetime
     category: Optional[CategoryRead] = None
+
+    @computed_field
+    @property
+    def receipt_url(self) -> Optional[str]:
+        if not self.receipt_path:
+            return None
+        return f"/api/uploads/{os.path.basename(self.receipt_path)}"
 
     model_config = {"from_attributes": True}
 

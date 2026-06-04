@@ -17,6 +17,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List
 
 from app.core.database import Base
 
@@ -66,3 +67,4 @@ class Bill(Base):
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="bills")  # noqa: F821
     category: Mapped[Optional["Category"]] = relationship("Category", back_populates="bills")  # noqa: F821
+    payments: Mapped[List["Payment"]] = relationship("Payment", back_populates="bill", cascade="all, delete-orphan")  # noqa: F821

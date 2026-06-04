@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import calendar
+import csv
+import io
 import logging
 import math
 import os
@@ -9,6 +11,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -17,8 +20,10 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.bill import Bill, RecurrenceInterval
+from app.models.payment import Payment
 from app.models.user import User
 from app.schemas.bill import BillCreate, BillListResponse, BillRead, BillUpdate
+from app.schemas.payment import PaymentRead
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -125,6 +130,45 @@ async def create_bill(
     return bill
 
 
+@router.get("/export")
+async def export_bills(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    """Export all bills for the current user as a CSV file."""
+    result = await db.execute(
+        select(Bill)
+        .where(Bill.user_id == current_user.id)
+        .options(selectinload(Bill.category))
+        .order_by(Bill.due_date.asc())
+    )
+    bills = result.scalars().all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Name", "Amount", "Due Date", "Status", "Category", "Recurring", "Interval", "Autopay", "Notes", "Paid At"])
+    for bill in bills:
+        writer.writerow([
+            bill.name,
+            f"{bill.amount:.2f}",
+            bill.due_date.strftime("%Y-%m-%d"),
+            "Paid" if bill.is_paid else "Unpaid",
+            bill.category.name if bill.category else "",
+            "Yes" if bill.is_recurring else "No",
+            bill.recurrence_interval.value if bill.recurrence_interval else "",
+            "Yes" if bill.autopay_enabled else "No",
+            bill.notes or "",
+            bill.paid_at.strftime("%Y-%m-%d") if bill.paid_at else "",
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=bills-export.csv"},
+    )
+
+
 @router.get("/{bill_id}", response_model=BillRead)
 async def get_bill(
     bill_id: int,
@@ -187,6 +231,7 @@ async def mark_bill_paid(
         )
     bill.is_paid = True
     bill.paid_at = datetime.now(timezone.utc)
+    db.add(Payment(bill_id=bill.id, user_id=bill.user_id, action="paid", amount=bill.amount))
 
     if bill.is_recurring and bill.recurrence_interval:
         next_due = _next_due_date(bill.due_date, bill.recurrence_interval)
@@ -227,10 +272,27 @@ async def mark_bill_unpaid(
         )
     bill.is_paid = False
     bill.paid_at = None
+    db.add(Payment(bill_id=bill.id, user_id=bill.user_id, action="unpaid", amount=bill.amount))
     await db.flush()
     await db.refresh(bill)
     await db.refresh(bill, attribute_names=["category"])
     return bill
+
+
+@router.get("/{bill_id}/payments", response_model=list[PaymentRead])
+async def get_payment_history(
+    bill_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[Payment]:
+    """Return the payment/unpayment history for a bill."""
+    await _get_bill_or_404(db, bill_id, current_user.id)
+    result = await db.execute(
+        select(Payment)
+        .where(Payment.bill_id == bill_id, Payment.user_id == current_user.id)
+        .order_by(Payment.created_at.desc())
+    )
+    return result.scalars().all()
 
 
 @router.post("/{bill_id}/receipt", response_model=BillRead)

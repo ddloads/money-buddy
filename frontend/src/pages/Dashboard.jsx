@@ -11,7 +11,8 @@ import { format } from 'date-fns'
 import StatCard from '../components/StatCard'
 import UpcomingBills from '../components/UpcomingBills'
 import MonthlyChart from '../components/MonthlyChart'
-import { useDashboardSummary, useUpcomingBills, useMonthlyStats } from '../hooks/useDashboard'
+import CategoryChart from '../components/CategoryChart'
+import { useDashboardSummary, useUpcomingBills, useMonthlyStats, useCategoryStats } from '../hooks/useDashboard'
 import { useAuthStore } from '../store/authStore'
 
 export default function Dashboard() {
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
   const { data: upcoming, isLoading: upcomingLoading } = useUpcomingBills(7)
   const { data: monthly, isLoading: monthlyLoading } = useMonthlyStats(6)
+  const { data: categories, isLoading: categoriesLoading } = useCategoryStats()
 
   const firstName = user?.first_name || user?.name?.split(' ')[0] || 'there'
   const today = format(new Date(), 'EEEE, MMMM d')
@@ -157,17 +159,27 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Monthly chart */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
+      {/* Charts row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="card p-5">
+          <div className="mb-4">
             <h2 className="section-title">Monthly Overview</h2>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
               Bills total, paid & unpaid — last 6 months
             </p>
           </div>
+          <MonthlyChart data={monthly} loading={monthlyLoading} />
         </div>
-        <MonthlyChart data={monthly} loading={monthlyLoading} />
+
+        <div className="card p-5">
+          <div className="mb-4">
+            <h2 className="section-title">Spending by Category</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              This month's bills broken down by category
+            </p>
+          </div>
+          <CategoryChart data={categories} loading={categoriesLoading} />
+        </div>
       </div>
     </div>
   )

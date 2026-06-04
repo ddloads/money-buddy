@@ -61,9 +61,11 @@ export const billsAPI = {
   update: (id, data) => api.put(`/bills/${id}`, data),
   delete: (id) => api.delete(`/bills/${id}`),
   markPaid: (id, data) => api.post(`/bills/${id}/pay`, data),
+  payments: (id) => api.get(`/bills/${id}/payments`),
+  export: () => api.get('/bills/export', { responseType: 'blob' }),
   uploadReceipt: (id, file) => {
     const formData = new FormData()
-    formData.append('receipt', file)
+    formData.append('file', file)
     return api.post(`/bills/${id}/receipt`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
@@ -87,4 +89,5 @@ export const dashboardAPI = {
   summary: () => api.get('/dashboard/summary'),
   upcoming: (days = 7) => api.get('/dashboard/upcoming', { params: { days } }),
   monthlyStats: (months = 6) => api.get('/dashboard/monthly', { params: { months } }),
+  categoryStats: () => api.get('/dashboard/categories'),
 }

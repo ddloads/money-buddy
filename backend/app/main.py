@@ -57,6 +57,7 @@ async def lifespan(app: FastAPI):
                 "ADD COLUMN IF NOT EXISTS notif_weekly_summary BOOLEAN NOT NULL DEFAULT true"
             )
         )
+        # payments table is handled by create_all via the Payment model
     logger.info("Database tables ready")
 
     yield

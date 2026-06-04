@@ -95,10 +95,72 @@ async def check_and_send_reminders() -> dict[str, int]:
     return stats
 
 
+async def check_and_send_overdue_alerts() -> dict[str, int]:
+    """
+    Find all unpaid bills that are past their due date and send overdue alerts
+    to users who have notif_overdue_alerts enabled.
+    """
+    now = datetime.now(timezone.utc)
+    stats = {"checked": 0, "sent": 0, "failed": 0, "skipped": 0}
+    reminded_cutoff = now - timedelta(hours=20)
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(Bill)
+            .join(User, Bill.user_id == User.id)
+            .where(
+                Bill.is_paid == False,  # noqa: E712
+                Bill.due_date < now,
+                User.is_active == True,  # noqa: E712
+                User.notif_overdue_alerts == True,  # noqa: E712
+                or_(
+                    Bill.last_reminded_at == None,  # noqa: E711
+                    Bill.last_reminded_at < reminded_cutoff,
+                ),
+            )
+            .options(selectinload(Bill.user))
+            .order_by(Bill.due_date.asc())
+        )
+        bills = result.scalars().all()
+
+        logger.info("Overdue check: found %d eligible overdue bills", len(bills))
+
+        for bill in bills:
+            stats["checked"] += 1
+            user: User = bill.user
+
+            if not user or not user.email:
+                stats["skipped"] += 1
+                continue
+
+            due_str = bill.due_date.strftime("%B %d, %Y")
+            display_name = user.username or user.email.split("@")[0]
+
+            success = send_reminder_email(
+                recipient_email=user.email,
+                recipient_name=display_name,
+                bill_name=bill.name,
+                amount=float(bill.amount),
+                due_date=due_str,
+                overdue=True,
+            )
+            if success:
+                bill.last_reminded_at = now
+                stats["sent"] += 1
+            else:
+                stats["failed"] += 1
+
+        await db.commit()
+
+    logger.info("Overdue alert run complete: %s", stats)
+    return stats
+
+
 async def run_reminders_as_task() -> None:
     """Entry point for use as a background task or cron job."""
     try:
-        stats = await check_and_send_reminders()
-        logger.info("Reminder task finished: %s", stats)
+        reminder_stats = await check_and_send_reminders()
+        overdue_stats = await check_and_send_overdue_alerts()
+        logger.info("Reminder task finished — upcoming: %s, overdue: %s", reminder_stats, overdue_stats)
     except Exception as exc:
         logger.exception("Unhandled error in reminder task: %s", exc)

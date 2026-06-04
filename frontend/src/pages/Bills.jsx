@@ -6,10 +6,11 @@ import {
   FunnelIcon,
   ArrowsUpDownIcon,
   XMarkIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline'
 import BillCard from '../components/BillCard'
 import { useBills, useMarkBillPaid } from '../hooks/useBills'
-import { getBillItems, getBillTotal } from '../utils/billList'
+import { billsAPI } from '../utils/api'
 
 const FILTERS = [
   { value: '', label: 'All Bills' },
@@ -33,6 +34,7 @@ export default function Bills() {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('due_date_asc')
   const [showSort, setShowSort] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const params = {
     status: filter || undefined,
@@ -40,14 +42,39 @@ export default function Bills() {
     sort,
   }
 
-  const { data, isLoading, isError, refetch } = useBills(params)
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useBills(params)
   const markPaid = useMarkBillPaid()
 
-  const bills = getBillItems(data)
-  const totalBills = getBillTotal(data, bills)
+  const bills = data?.pages?.flatMap((page) => page.items ?? []) ?? []
+  const totalBills = data?.pages?.[0]?.total ?? 0
 
   const handleMarkPaid = (bill) => {
     markPaid.mutate({ id: bill.id, data: { paid_date: new Date().toISOString().split('T')[0] } })
+  }
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await billsAPI.export()
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'bills-export.csv'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
@@ -55,10 +82,21 @@ export default function Bills() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="page-header">Bills</h1>
-        <button onClick={() => navigate('/bills/new')} className="btn-primary">
-          <PlusIcon className="h-4 w-4" />
-          <span className="hidden sm:inline">Add Bill</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="btn-secondary text-sm"
+            title="Export as CSV"
+          >
+            <ArrowDownTrayIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">{exporting ? 'Exporting…' : 'Export'}</span>
+          </button>
+          <button onClick={() => navigate('/bills/new')} className="btn-primary">
+            <PlusIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Add Bill</span>
+          </button>
+        </div>
       </div>
 
       {/* Search + Sort */}
@@ -203,6 +241,16 @@ export default function Bills() {
               />
             ))}
           </div>
+
+          {hasNextPage && (
+            <button
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="btn-secondary w-full"
+            >
+              {isFetchingNextPage ? 'Loading…' : `Load more (${totalBills - bills.length} remaining)`}
+            </button>
+          )}
         </>
       )}
     </div>

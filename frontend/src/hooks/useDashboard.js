@@ -1,6 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { dashboardAPI } from '../utils/api'
 
+export function useCategoryStats() {
+  return useQuery({
+    queryKey: ['dashboard', 'categories'],
+    queryFn: () => dashboardAPI.categoryStats().then((r) => r.data),
+    staleTime: 1000 * 60 * 2,
+  })
+}
+
 export function useDashboardSummary() {
   return useQuery({
     queryKey: ['dashboard', 'summary'],

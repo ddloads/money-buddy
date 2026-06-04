@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline'
 import BillCard from '../components/BillCard'
 import { useBills, useMarkBillPaid } from '../hooks/useBills'
+import { getBillItems, getBillTotal } from '../utils/billList'
 
 const FILTERS = [
   { value: '', label: 'All Bills' },
@@ -42,7 +43,8 @@ export default function Bills() {
   const { data, isLoading, isError, refetch } = useBills(params)
   const markPaid = useMarkBillPaid()
 
-  const bills = data?.bills || data || []
+  const bills = getBillItems(data)
+  const totalBills = getBillTotal(data, bills)
 
   const handleMarkPaid = (bill) => {
     markPaid.mutate({ id: bill.id, data: { paid_date: new Date().toISOString().split('T')[0] } })
@@ -187,7 +189,7 @@ export default function Bills() {
       ) : (
         <>
           <p className="text-xs text-gray-400 dark:text-gray-500">
-            {bills.length} bill{bills.length !== 1 ? 's' : ''}
+            {totalBills} bill{totalBills !== 1 ? 's' : ''}
             {filter ? ` · ${filter}` : ''}
             {search ? ` · matching "${search}"` : ''}
           </p>

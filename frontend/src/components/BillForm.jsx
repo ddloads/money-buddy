@@ -71,7 +71,7 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
       </div>
 
       {/* Amount + Due Date (side by side) */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="label" htmlFor="amount">
             Amount <span className="text-red-500">*</span>
@@ -153,7 +153,7 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
       </label>
 
       {/* Recurrence + Reminder */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="label" htmlFor="recurrence">
             Recurrence

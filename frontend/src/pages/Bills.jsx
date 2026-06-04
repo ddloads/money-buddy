@@ -80,19 +80,19 @@ export default function Bills() {
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="page-header">Bills</h1>
         <div className="flex items-center gap-2">
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="btn-secondary text-sm"
+            className="btn-secondary text-sm flex-1 sm:flex-none"
             title="Export as CSV"
           >
             <ArrowDownTrayIcon className="h-4 w-4" />
             <span className="hidden sm:inline">{exporting ? 'Exporting…' : 'Export'}</span>
           </button>
-          <button onClick={() => navigate('/bills/new')} className="btn-primary">
+          <button onClick={() => navigate('/bills/new')} className="btn-primary flex-1 sm:flex-none">
             <PlusIcon className="h-4 w-4" />
             <span className="hidden sm:inline">Add Bill</span>
           </button>
@@ -100,7 +100,7 @@ export default function Bills() {
       </div>
 
       {/* Search + Sort */}
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
@@ -124,7 +124,7 @@ export default function Bills() {
         <div className="relative">
           <button
             onClick={() => setShowSort(!showSort)}
-            className="btn-secondary gap-2 flex-shrink-0"
+            className="btn-secondary gap-2 w-full sm:w-auto justify-center sm:justify-start flex-shrink-0"
           >
             <ArrowsUpDownIcon className="h-4 w-4" />
             <span className="hidden sm:inline text-xs">
@@ -134,7 +134,7 @@ export default function Bills() {
           {showSort && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowSort(false)} />
-              <div className="absolute right-0 mt-1 w-52 card z-20 py-1 shadow-lg">
+              <div className="absolute right-0 mt-1 w-full min-w-52 sm:w-52 card z-20 py-1 shadow-lg">
                 {SORT_OPTIONS.map(({ value, label }) => (
                   <button
                     key={value}

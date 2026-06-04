@@ -19,12 +19,12 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center px-4 py-8 sm:py-10">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-3">
-            <img src="/logo.svg" alt="Money Buddy" className="h-24 w-24 drop-shadow-lg" />
+            <img src="/logo.svg" alt="Money Buddy" className="h-20 w-20 sm:h-24 sm:w-24 drop-shadow-lg" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Money Buddy
@@ -35,7 +35,7 @@ export default function Login() {
         </div>
 
         {/* Card */}
-        <div className="card p-8 animate-slide-up">
+        <div className="card p-5 sm:p-8 animate-slide-up">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
             Welcome back 👋
           </h2>

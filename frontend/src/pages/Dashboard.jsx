@@ -35,14 +35,14 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="page-header">Good day, {firstName}! 👋</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{today}</p>
         </div>
         <button
           onClick={() => navigate('/bills/new')}
-          className="btn-primary flex-shrink-0"
+          className="btn-primary w-full sm:w-auto sm:flex-shrink-0"
         >
           <PlusIcon className="h-4 w-4" />
           <span className="hidden sm:inline">Add Bill</span>
@@ -90,7 +90,7 @@ export default function Dashboard() {
         {/* Upcoming bills (2/3 width on desktop) */}
         <div className="lg:col-span-2">
           <div className="card p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
               <h2 className="section-title">Upcoming Bills</h2>
               <button
                 onClick={() => navigate('/bills')}
@@ -190,7 +190,7 @@ export default function Dashboard() {
 
       {/* Year-over-year chart */}
       <div className="card p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>
             <h2 className="section-title">Year-over-Year</h2>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">

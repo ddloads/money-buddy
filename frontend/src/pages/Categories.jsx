@@ -29,7 +29,7 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isLoading }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="label">Name <span className="text-red-500">*</span></label>
           <input
@@ -122,7 +122,7 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isLoading }) {
         <p className="mt-1 text-xs text-gray-400">Leave blank for no budget limit.</p>
       </div>
 
-      <div className="flex gap-3 pt-1">
+      <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1">
         <button type="button" onClick={onCancel} className="btn-secondary flex-1">
           Cancel
         </button>
@@ -184,11 +184,11 @@ export default function Categories() {
 
   return (
     <div className="space-y-5 animate-fade-in max-w-2xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="page-header">Categories</h1>
         <button
           onClick={() => { setShowForm(true); setEditCategory(null) }}
-          className="btn-primary"
+          className="btn-primary w-full sm:w-auto"
         >
           <PlusIcon className="h-4 w-4" />
           <span className="hidden sm:inline">New Category</span>
@@ -309,7 +309,7 @@ export default function Categories() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => { setEditCategory(cat); setShowForm(false) }}
                       className="btn-ghost p-2 text-gray-500"

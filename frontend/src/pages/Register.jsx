@@ -29,7 +29,7 @@ export default function Register() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-3">
-            <img src="/logo.svg" alt="Money Buddy" className="h-24 w-24 drop-shadow-lg" />
+            <img src="/logo.svg" alt="Money Buddy" className="h-20 w-20 sm:h-24 sm:w-24 drop-shadow-lg" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             Money Buddy
@@ -40,7 +40,7 @@ export default function Register() {
         </div>
 
         {/* Card */}
-        <div className="card p-8 animate-slide-up">
+        <div className="card p-5 sm:p-8 animate-slide-up">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
             Create your account
           </h2>
@@ -65,7 +65,7 @@ export default function Register() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             {/* First + Last name */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="label" htmlFor="first_name">First name</label>
                 <input

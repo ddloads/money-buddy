@@ -51,7 +51,7 @@ export default function BillCard({ bill, onMarkPaid, isMarkingPaid }) {
       onClick={handleCardClick}
       className="card p-4 cursor-pointer hover:shadow-card-hover transition-all duration-200 animate-fade-in group"
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         {/* Left: info */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -85,8 +85,8 @@ export default function BillCard({ bill, onMarkPaid, isMarkingPaid }) {
         </div>
 
         {/* Right: amount + action */}
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <span className={`text-lg font-bold ${bill.is_paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'}`}>
+        <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-start flex-shrink-0 w-full sm:w-auto">
+          <span className={`text-base sm:text-lg font-bold ${bill.is_paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'}`}>
             {format(bill.amount)}
           </span>
 

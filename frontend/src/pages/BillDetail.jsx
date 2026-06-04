@@ -123,21 +123,21 @@ export default function BillDetail({ isNew = false }) {
   return (
     <div className="space-y-5 animate-fade-in max-w-2xl">
       {/* Back + actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="btn-ghost gap-2"
+          className="btn-ghost gap-2 self-start"
         >
           <ArrowLeftIcon className="h-4 w-4" />
           Back
         </button>
 
         {!isNew && bill && (
-          <div className="flex items-center gap-2">
+          <div className="flex w-full sm:w-auto items-center gap-2">
             {!bill.is_paid && (
               <button
                 onClick={() => setShowPayDialog(true)}
-                className="btn-outline gap-2 text-sm"
+                className="btn-outline gap-2 text-sm flex-1 sm:flex-none"
               >
                 <CheckCircleIcon className="h-4 w-4" />
                 Mark Paid
@@ -145,7 +145,7 @@ export default function BillDetail({ isNew = false }) {
             )}
             <button
               onClick={() => setShowDeleteDialog(true)}
-              className="btn-ghost text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
+              className="btn-ghost text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 flex-1 sm:flex-none"
             >
               <TrashIcon className="h-4 w-4" />
               <span className="hidden sm:inline text-sm">Delete</span>
@@ -178,7 +178,7 @@ export default function BillDetail({ isNew = false }) {
 
       {/* Tabs (only for existing bills) */}
       {!isNew && (
-        <div className="flex border-b border-gray-200 dark:border-gray-800">
+        <div className="flex overflow-x-auto border-b border-gray-200 dark:border-gray-800 scrollbar-thin">
           {[
             { key: 'details', label: 'Details' },
             { key: 'receipt', label: 'Receipt', badge: bill?.receipt_url ? '✓' : null },
@@ -206,7 +206,7 @@ export default function BillDetail({ isNew = false }) {
 
       {/* Bill form */}
       {(isNew || activeTab === 'details') && (
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           {(updateBill.isSuccess && !isNew) && (
             <div className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg">
               <p className="text-sm text-emerald-700 dark:text-emerald-400">✓ Changes saved successfully!</p>
@@ -230,7 +230,7 @@ export default function BillDetail({ isNew = false }) {
 
       {/* Receipt tab */}
       {!isNew && activeTab === 'receipt' && (
-        <div className="card p-6 space-y-4">
+        <div className="card p-4 sm:p-6 space-y-4">
           {uploadReceipt.isError && (
             <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
               <p className="text-sm text-red-700 dark:text-red-400">
@@ -241,7 +241,7 @@ export default function BillDetail({ isNew = false }) {
 
           {bill?.receipt_url ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
                   <PaperClipIcon className="h-4 w-4" />
                   <span className="font-medium">Receipt attached</span>
@@ -262,7 +262,7 @@ export default function BillDetail({ isNew = false }) {
                   <img
                     src={bill.receipt_url}
                     alt="Receipt"
-                    className="max-h-80 w-auto rounded-lg border border-gray-200 dark:border-gray-700"
+                    className="max-h-80 w-full max-w-md rounded-lg border border-gray-200 dark:border-gray-700 object-contain"
                   />
                 </a>
               ) : (
@@ -313,7 +313,7 @@ export default function BillDetail({ isNew = false }) {
 
       {/* Payment history tab */}
       {!isNew && activeTab === 'history' && (
-        <div className="card p-6">
+        <div className="card p-4 sm:p-6">
           <h3 className="section-title mb-4">Payment History</h3>
           {!paymentHistory || paymentHistory.length === 0 ? (
             <div className="text-center py-8">
@@ -327,7 +327,7 @@ export default function BillDetail({ isNew = false }) {
                   <div className={`absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border-2 border-white dark:border-gray-900 ${
                     entry.action === 'paid' ? 'bg-emerald-500' : 'bg-gray-400'
                   }`} />
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className={`text-sm font-medium ${
                         entry.action === 'paid'

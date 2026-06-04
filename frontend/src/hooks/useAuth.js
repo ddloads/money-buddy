@@ -53,6 +53,16 @@ export function useAuth() {
     mutationFn: (data) => authAPI.changePassword(data),
   })
 
+  // Delete account mutation
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => authAPI.deleteAccount(),
+    onSuccess: () => {
+      storeLogout()
+      queryClient.clear()
+      navigate('/login')
+    },
+  })
+
   return {
     user,
     token,
@@ -62,5 +72,6 @@ export function useAuth() {
     logout: logoutMutation,
     updateProfile: updateProfileMutation,
     changePassword: changePasswordMutation,
+    deleteAccount: deleteAccountMutation,
   }
 }

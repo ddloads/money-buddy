@@ -25,14 +25,24 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     username: Optional[str] = None
     email: Optional[EmailStr] = None
-    password: Optional[str] = None
+    notif_email_reminders: Optional[bool] = None
+    notif_overdue_alerts: Optional[bool] = None
+    notif_weekly_summary: Optional[bool] = None
+    currency: Optional[str] = None
 
-    @field_validator("password")
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
     @classmethod
-    def password_strength(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None and len(v) < 8:
+    def password_strength(cls, v: str) -> str:
+        if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
         return v
 
@@ -44,5 +54,9 @@ class UserRead(UserBase):
     google_id: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    notif_email_reminders: bool = True
+    notif_overdue_alerts: bool = True
+    notif_weekly_summary: bool = True
+    currency: str = 'USD'
 
     model_config = {"from_attributes": True}

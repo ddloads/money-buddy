@@ -1,14 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { billsAPI } from '../utils/api'
 import { normalizeUpdatedBillForCache } from '../utils/billCache'
 
 const BILLS_KEY = 'bills'
 
 export function useBills(params = {}) {
-  return useQuery({
-    queryKey: [BILLS_KEY, params],
-    queryFn: () => billsAPI.list(params).then((r) => r.data),
-    placeholderData: (prev) => prev,
+  return useInfiniteQuery({
+    queryKey: [BILLS_KEY, 'list', params],
+    queryFn: ({ pageParam }) =>
+      billsAPI.list({ ...params, page: pageParam }).then((r) => r.data),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.pages ? lastPage.page + 1 : undefined,
   })
 }
 
@@ -83,5 +86,13 @@ export function useDeleteReceipt(billId) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [BILLS_KEY, billId] })
     },
+  })
+}
+
+export function usePaymentHistory(billId) {
+  return useQuery({
+    queryKey: [BILLS_KEY, billId, 'payments'],
+    queryFn: () => billsAPI.payments(billId).then((r) => r.data),
+    enabled: !!billId && billId !== 'new',
   })
 }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ClockIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import CategoryBadge from './CategoryBadge'
 import { formatBillDate, toCalendarDate } from '../utils/billDates'
+import { useCurrency } from '../hooks/useCurrency'
 
 function DueBadge({ dateStr }) {
   const due = toCalendarDate(dateStr)
@@ -41,6 +42,7 @@ function DueBadge({ dateStr }) {
 
 export default function UpcomingBills({ bills, loading }) {
   const navigate = useNavigate()
+  const { format } = useCurrency()
 
   if (loading) {
     return (
@@ -104,7 +106,7 @@ export default function UpcomingBills({ bills, loading }) {
           {/* Amount + due */}
           <div className="flex flex-col items-end gap-1 flex-shrink-0">
             <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
-              ${parseFloat(bill.amount).toFixed(2)}
+              {format(bill.amount)}
             </span>
             <DueBadge dateStr={bill.due_date} />
           </div>

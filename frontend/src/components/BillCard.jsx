@@ -4,6 +4,7 @@ import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 import { useNavigate } from 'react-router-dom'
 import CategoryBadge from './CategoryBadge'
 import { formatBillDate, toCalendarDate } from '../utils/billDates'
+import { useCurrency } from '../hooks/useCurrency'
 
 function getDueStatus(dueDateStr, isPaid) {
   if (isPaid) return { label: 'Paid', color: 'green', Icon: CheckCircleSolid }
@@ -29,6 +30,7 @@ const colorMap = {
 
 export default function BillCard({ bill, onMarkPaid, isMarkingPaid }) {
   const navigate = useNavigate()
+  const { format } = useCurrency()
   const status = getDueStatus(bill.due_date, bill.is_paid)
 
   const handleCardClick = (e) => {
@@ -85,7 +87,7 @@ export default function BillCard({ bill, onMarkPaid, isMarkingPaid }) {
         {/* Right: amount + action */}
         <div className="flex flex-col items-end gap-2 flex-shrink-0">
           <span className={`text-lg font-bold ${bill.is_paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'}`}>
-            ${parseFloat(bill.amount).toFixed(2)}
+            {format(bill.amount)}
           </span>
 
           {!bill.is_paid ? (

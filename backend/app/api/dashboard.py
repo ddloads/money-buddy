@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.bill import Bill
+from app.models.category import Category
 from app.models.user import User
 from app.schemas.bill import BillRead
 
@@ -167,3 +168,96 @@ async def get_dashboard_monthly(
 ) -> list[dict[str, Any]]:
     """Return monthly paid/unpaid totals for the chart."""
     return await _monthly_breakdown(db, current_user.id, months=months)
+
+
+@router.get("/categories", response_model=list[dict[str, Any]])
+async def get_category_breakdown(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    """Return spending breakdown by category for the current month."""
+    now = datetime.now(timezone.utc)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    month_end = (
+        now.replace(year=now.year + 1, month=1, day=1)
+        if now.month == 12
+        else now.replace(month=now.month + 1, day=1)
+    )
+
+    result = await db.execute(
+        select(
+            Bill.category_id,
+            Category.name,
+            Category.color,
+            Category.icon,
+            Category.monthly_budget,
+            func.coalesce(func.sum(Bill.amount), 0).label("total"),
+            func.count(Bill.id).label("count"),
+        )
+        .outerjoin(Category, Bill.category_id == Category.id)
+        .where(
+            Bill.user_id == current_user.id,
+            Bill.due_date >= month_start,
+            Bill.due_date < month_end,
+        )
+        .group_by(Bill.category_id, Category.name, Category.color, Category.icon, Category.monthly_budget)
+        .order_by(func.sum(Bill.amount).desc())
+    )
+
+    rows = result.all()
+    return [
+        {
+            "category_id": row.category_id,
+            "name": row.name or "Uncategorized",
+            "color": row.color or "#9ca3af",
+            "icon": row.icon or "",
+            "total": float(row.total),
+            "count": int(row.count),
+            "monthly_budget": float(row.monthly_budget) if row.monthly_budget else None,
+            "budget_pct": round(float(row.total) / float(row.monthly_budget) * 100)
+            if row.monthly_budget
+            else None,
+        }
+        for row in rows
+    ]
+
+
+MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+
+@router.get("/yearly", response_model=list[dict[str, Any]])
+async def get_yearly_breakdown(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    """Return a 12-month comparison across the current and previous year."""
+    now = datetime.now(timezone.utc)
+    two_years_ago = now.replace(year=now.year - 2, month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    result = await db.execute(
+        select(
+            extract("year", Bill.due_date).label("year"),
+            extract("month", Bill.due_date).label("month"),
+            func.coalesce(func.sum(Bill.amount), 0).label("total"),
+        )
+        .where(Bill.user_id == current_user.id, Bill.due_date >= two_years_ago)
+        .group_by("year", "month")
+        .order_by("year", "month")
+    )
+
+    rows_by_ym: dict[tuple[int, int], float] = {}
+    for row in result.all():
+        rows_by_ym[(int(row.year), int(row.month))] = float(row.total)
+
+    year1 = now.year - 1
+    year2 = now.year
+
+    return [
+        {
+            "month": m,
+            "month_name": MONTH_NAMES[m - 1],
+            str(year1): rows_by_ym.get((year1, m), 0.0),
+            str(year2): rows_by_ym.get((year2, m), 0.0),
+        }
+        for m in range(1, 13)
+    ]

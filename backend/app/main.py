@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, bills, categories, dashboard
+from app.api import auth, bills, categories, dashboard, templates
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,43 @@ async def lifespan(app: FastAPI):
             text(
                 "ALTER TABLE bills "
                 "ADD COLUMN IF NOT EXISTS autopay_enabled BOOLEAN NOT NULL DEFAULT false"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE bills "
+                "ADD COLUMN IF NOT EXISTS last_reminded_at TIMESTAMPTZ"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE users "
+                "ADD COLUMN IF NOT EXISTS notif_email_reminders BOOLEAN NOT NULL DEFAULT true"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE users "
+                "ADD COLUMN IF NOT EXISTS notif_overdue_alerts BOOLEAN NOT NULL DEFAULT true"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE users "
+                "ADD COLUMN IF NOT EXISTS notif_weekly_summary BOOLEAN NOT NULL DEFAULT true"
+            )
+        )
+        # payments and bill_templates tables are handled by create_all via their models
+        await conn.execute(
+            text(
+                "ALTER TABLE users "
+                "ADD COLUMN IF NOT EXISTS currency VARCHAR(10) NOT NULL DEFAULT 'USD'"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE categories "
+                "ADD COLUMN IF NOT EXISTS monthly_budget NUMERIC(12,2)"
             )
         )
     logger.info("Database tables ready")
@@ -74,6 +111,7 @@ def create_app() -> FastAPI:
     app.include_router(bills.router, prefix="/bills", tags=["Bills"])
     app.include_router(categories.router, prefix="/categories", tags=["Categories"])
     app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
+    app.include_router(templates.router, prefix="/templates", tags=["Templates"])
 
     @app.get("/health", tags=["Health"])
     async def health_check():

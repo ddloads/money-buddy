@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline'
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '../hooks/useCategories'
+import { useCurrency } from '../hooks/useCurrency'
 
 const PRESET_COLORS = [
   '#ef4444', '#f97316', '#f59e0b', '#eab308',
@@ -18,6 +19,7 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isLoading }) {
       name: '',
       color: '#10b981',
       icon: '📄',
+      monthly_budget: '',
       ...defaultValues,
     },
   })
@@ -104,6 +106,22 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isLoading }) {
         </div>
       </div>
 
+      {/* Monthly budget */}
+      <div>
+        <label className="label">Monthly Budget (optional)</label>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          className="input"
+          placeholder="e.g. 200.00"
+          {...register('monthly_budget', {
+            setValueAs: (v) => (v === '' || v === null ? null : parseFloat(v)),
+          })}
+        />
+        <p className="mt-1 text-xs text-gray-400">Leave blank for no budget limit.</p>
+      </div>
+
       <div className="flex gap-3 pt-1">
         <button type="button" onClick={onCancel} className="btn-secondary flex-1">
           Cancel
@@ -139,6 +157,7 @@ export default function Categories() {
   const [showForm, setShowForm] = useState(false)
   const [editCategory, setEditCategory] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const { format } = useCurrency()
 
   const { data: categories, isLoading, isError } = useCategories()
   const createCat = useCreateCategory()
@@ -267,11 +286,26 @@ export default function Categories() {
                         style={{ backgroundColor: cat.color }}
                       />
                     </div>
-                    {cat.bill_count !== undefined && (
+                    {cat.monthly_budget ? (
+                      <div className="mt-1">
+                        <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 mb-0.5">
+                          <span>Budget: {format(cat.monthly_budget)}</span>
+                        </div>
+                        <div className="h-1.5 w-32 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${Math.min(100, (cat.bill_count || 0))}%`,
+                              backgroundColor: cat.color || '#10b981',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ) : cat.bill_count !== undefined ? (
                       <p className="text-xs text-gray-400 dark:text-gray-500">
                         {cat.bill_count} bill{cat.bill_count !== 1 ? 's' : ''}
                       </p>
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Actions */}

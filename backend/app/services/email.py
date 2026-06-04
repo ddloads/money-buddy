@@ -12,8 +12,21 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
-def _build_reminder_html(recipient_name: str, bill_name: str, amount: float, due_date: str) -> str:
-    """Build the HTML body for a bill reminder email."""
+def _build_reminder_html(
+    recipient_name: str, bill_name: str, amount: float, due_date: str, overdue: bool = False
+) -> str:
+    """Build the HTML body for a bill reminder or overdue alert email."""
+    if overdue:
+        headline = "🚨 Overdue Bill — Action Required"
+        intro = "The following bill is <strong>past due</strong> and still unpaid:"
+        cta = "Please log in to Money Buddy to pay or update this bill."
+        accent = "#e74c3c"
+    else:
+        headline = "💸 Bill Reminder from Money Buddy"
+        intro = "This is a friendly reminder that the following bill is coming up soon:"
+        cta = "Please ensure you have sufficient funds and pay on time to avoid late fees."
+        accent = "#10b981"
+
     return f"""
 <!DOCTYPE html>
 <html>
@@ -22,23 +35,23 @@ def _build_reminder_html(recipient_name: str, bill_name: str, amount: float, due
   <style>
     body {{ font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }}
     .card {{ background: #fff; border-radius: 8px; padding: 30px; max-width: 500px; margin: auto; }}
-    .amount {{ font-size: 28px; font-weight: bold; color: #e74c3c; }}
+    .amount {{ font-size: 28px; font-weight: bold; color: {accent}; }}
     .footer {{ margin-top: 20px; font-size: 12px; color: #888; }}
   </style>
 </head>
 <body>
   <div class="card">
-    <h2>💸 Bill Reminder from Money Buddy</h2>
+    <h2>{headline}</h2>
     <p>Hi <strong>{recipient_name}</strong>,</p>
-    <p>This is a friendly reminder that the following bill is coming up soon:</p>
+    <p>{intro}</p>
     <table>
       <tr><td><strong>Bill:</strong></td><td>{bill_name}</td></tr>
       <tr><td><strong>Amount:</strong></td><td class="amount">${amount:,.2f}</td></tr>
       <tr><td><strong>Due Date:</strong></td><td>{due_date}</td></tr>
     </table>
-    <p>Please ensure you have sufficient funds and pay on time to avoid late fees.</p>
+    <p>{cta}</p>
     <p>You can manage your bills at <a href="#">Money Buddy</a>.</p>
-    <div class="footer">You received this email because you have bill reminders enabled in Money Buddy.</div>
+    <div class="footer">You received this email because you have notifications enabled in Money Buddy.</div>
   </div>
 </body>
 </html>
@@ -52,6 +65,7 @@ def send_reminder_email(
     amount: float,
     due_date: str,
     subject: Optional[str] = None,
+    overdue: bool = False,
 ) -> bool:
     """
     Send a bill reminder email via SMTP.
@@ -75,8 +89,11 @@ def send_reminder_email(
     smtp_user = settings.SMTP_USER.strip()
     smtp_password = settings.SMTP_PASSWORD
 
-    subject = subject or f"⏰ Reminder: '{bill_name}' is due on {due_date}"
-    html_body = _build_reminder_html(recipient_name, bill_name, amount, due_date)
+    if overdue:
+        subject = subject or f"🚨 Overdue: '{bill_name}' was due on {due_date}"
+    else:
+        subject = subject or f"⏰ Reminder: '{bill_name}' is due on {due_date}"
+    html_body = _build_reminder_html(recipient_name, bill_name, amount, due_date, overdue=overdue)
     text_body = (
         f"Reminder: Your bill '{bill_name}' of ${amount:,.2f} is due on {due_date}. "
         "Please log in to Money Buddy to pay or manage it."

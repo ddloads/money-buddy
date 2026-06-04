@@ -17,6 +17,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List
 
 from app.core.database import Base
 
@@ -52,6 +53,7 @@ class Bill(Base):
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     receipt_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_reminded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -65,3 +67,4 @@ class Bill(Base):
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="bills")  # noqa: F821
     category: Mapped[Optional["Category"]] = relationship("Category", back_populates="bills")  # noqa: F821
+    payments: Mapped[List["Payment"]] = relationship("Payment", back_populates="bill", cascade="all, delete-orphan")  # noqa: F821

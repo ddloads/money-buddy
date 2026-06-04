@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Optional
 
 from authlib.integrations.starlette_client import OAuth
@@ -9,12 +10,14 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, hash_password, verify_password
+from app.models.bill import Bill
 from app.models.user import User
 from app.schemas.auth import LoginRequest, Token
-from app.schemas.user import UserCreate, UserRead
+from app.schemas.user import PasswordChange, UserCreate, UserRead, UserUpdate
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -165,10 +168,8 @@ async def google_callback(request: Request, db: AsyncSession = Depends(get_db)):
 @router.get("/me", response_model=UserRead)
 async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
     """Return the currently authenticated user's profile (requires JWT)."""
-    from app.api.deps import get_current_user
-    from app.core.security import oauth2_scheme
+    from app.core.security import decode_access_token
 
-    # Manual token extraction to avoid circular dependency on router level
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
         raise HTTPException(
@@ -177,8 +178,6 @@ async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     token = auth_header.split(" ", 1)[1]
-    from app.core.security import decode_access_token
-
     payload = decode_access_token(token)
     user_id = int(payload["sub"])
     result = await db.execute(select(User).where(User.id == user_id))
@@ -186,3 +185,70 @@ async def get_me(request: Request, db: AsyncSession = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
+
+
+@router.put("/me", response_model=UserRead)
+async def update_me(
+    payload: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Update the current user's profile and notification preferences."""
+    data = payload.model_dump(exclude_unset=True)
+
+    # Combine first_name / last_name into the username field
+    first = data.pop("first_name", None)
+    last = data.pop("last_name", None)
+    if first is not None or last is not None:
+        new_first = first if first is not None else (current_user.first_name or "")
+        new_last = last if last is not None else (current_user.last_name or "")
+        data["username"] = f"{new_first} {new_last}".strip() or None
+
+    for field, value in data.items():
+        setattr(current_user, field, value)
+
+    await db.flush()
+    await db.refresh(current_user)
+    return current_user
+
+
+@router.put("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(
+    payload: PasswordChange,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """Change the current user's password."""
+    if not current_user.hashed_password or not verify_password(
+        payload.current_password, current_user.hashed_password
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+    current_user.hashed_password = hash_password(payload.new_password)
+    await db.flush()
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_me(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    """Permanently delete the current user's account and all associated data."""
+    # Remove receipt files before deleting the DB rows
+    receipt_result = await db.execute(
+        select(Bill.receipt_path).where(
+            Bill.user_id == current_user.id,
+            Bill.receipt_path.is_not(None),
+        )
+    )
+    for (path,) in receipt_result.all():
+        if path and os.path.exists(path):
+            try:
+                os.remove(path)
+            except OSError as exc:
+                logger.warning("Could not delete receipt %s: %s", path, exc)
+
+    await db.delete(current_user)
+    await db.flush()

@@ -13,6 +13,7 @@ import BillForm from '../components/BillForm'
 import CategoryBadge from '../components/CategoryBadge'
 import { formatBillDate } from '../utils/billDates'
 import { normalizeBillFormData } from '../utils/billPayload'
+import { useCurrency } from '../hooks/useCurrency'
 import {
   useBill,
   useCreateBill,
@@ -21,6 +22,7 @@ import {
   useMarkBillPaid,
   useUploadReceipt,
   useDeleteReceipt,
+  usePaymentHistory,
 } from '../hooks/useBills'
 
 function ConfirmDialog({ open, title, message, onConfirm, onCancel, confirmLabel = 'Delete', loading }) {
@@ -52,9 +54,11 @@ export default function BillDetail({ isNew = false }) {
   const fileRef = useRef()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showPayDialog, setShowPayDialog] = useState(false)
-  const [activeTab, setActiveTab] = useState('details') // details | receipt
+  const [activeTab, setActiveTab] = useState('details') // details | receipt | history
 
+  const { format } = useCurrency()
   const { data: bill, isLoading } = useBill(isNew ? null : id)
+  const { data: paymentHistory } = usePaymentHistory(isNew ? null : id)
   const createBill = useCreateBill()
   const updateBill = useUpdateBill(id)
   const deleteBill = useDeleteBill()
@@ -175,20 +179,24 @@ export default function BillDetail({ isNew = false }) {
       {/* Tabs (only for existing bills) */}
       {!isNew && (
         <div className="flex border-b border-gray-200 dark:border-gray-800">
-          {['details', 'receipt'].map((tab) => (
+          {[
+            { key: 'details', label: 'Details' },
+            { key: 'receipt', label: 'Receipt', badge: bill?.receipt_url ? '✓' : null },
+            { key: 'history', label: 'History', badge: paymentHistory?.length > 0 ? paymentHistory.length : null },
+          ].map(({ key, label, badge }) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
-                activeTab === tab
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                activeTab === key
                   ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              {tab}
-              {tab === 'receipt' && bill?.receipt_url && (
+              {label}
+              {badge && (
                 <span className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-emerald-500 text-white text-xs">
-                  ✓
+                  {badge}
                 </span>
               )}
             </button>
@@ -303,6 +311,46 @@ export default function BillDetail({ isNew = false }) {
         </div>
       )}
 
+      {/* Payment history tab */}
+      {!isNew && activeTab === 'history' && (
+        <div className="card p-6">
+          <h3 className="section-title mb-4">Payment History</h3>
+          {!paymentHistory || paymentHistory.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-3xl mb-2">📋</div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">No payment history yet</p>
+            </div>
+          ) : (
+            <ol className="relative border-l border-gray-200 dark:border-gray-700 ml-3 space-y-4">
+              {paymentHistory.map((entry) => (
+                <li key={entry.id} className="ml-4">
+                  <div className={`absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full border-2 border-white dark:border-gray-900 ${
+                    entry.action === 'paid' ? 'bg-emerald-500' : 'bg-gray-400'
+                  }`} />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className={`text-sm font-medium ${
+                        entry.action === 'paid'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-gray-500 dark:text-gray-400'
+                      }`}>
+                        {entry.action === 'paid' ? '✓ Marked paid' : '↩ Marked unpaid'}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        {new Date(entry.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      {format(entry.amount)}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+
       {/* Delete confirmation dialog */}
       <ConfirmDialog
         open={showDeleteDialog}
@@ -317,7 +365,7 @@ export default function BillDetail({ isNew = false }) {
       <ConfirmDialog
         open={showPayDialog}
         title="Mark as paid?"
-        message={`Mark "${bill?.name}" ($${parseFloat(bill?.amount || 0).toFixed(2)}) as paid today?`}
+        message={`Mark "${bill?.name}" (${format(bill?.amount || 0)}) as paid today?`}
         onConfirm={handleMarkPaid}
         onCancel={() => setShowPayDialog(false)}
         confirmLabel="Mark Paid"

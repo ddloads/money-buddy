@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { billsAPI } from '../utils/api'
+import { normalizeUpdatedBillForCache } from '../utils/billCache'
 
 const BILLS_KEY = 'bills'
 
@@ -34,8 +35,8 @@ export function useUpdateBill(id) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (data) => billsAPI.update(id, data).then((r) => r.data),
-    onSuccess: (updated) => {
-      qc.setQueryData([BILLS_KEY, id], updated)
+    onSuccess: (updated, submitted) => {
+      qc.setQueryData([BILLS_KEY, id], normalizeUpdatedBillForCache(updated, submitted))
       qc.invalidateQueries({ queryKey: [BILLS_KEY] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
     },

@@ -5,7 +5,7 @@ import os
 from typing import Optional
 
 from authlib.integrations.starlette_client import OAuth
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -212,12 +212,12 @@ async def update_me(
     return current_user
 
 
-@router.put("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+@router.put("/me/password", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
 async def change_password(
     payload: PasswordChange,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> None:
+) -> Response:
     """Change the current user's password."""
     if not current_user.hashed_password or not verify_password(
         payload.current_password, current_user.hashed_password
@@ -228,13 +228,14 @@ async def change_password(
         )
     current_user.hashed_password = hash_password(payload.new_password)
     await db.flush()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
 async def delete_me(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> None:
+) -> Response:
     """Permanently delete the current user's account and all associated data."""
     # Remove receipt files before deleting the DB rows
     receipt_result = await db.execute(
@@ -252,3 +253,4 @@ async def delete_me(
 
     await db.delete(current_user)
     await db.flush()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

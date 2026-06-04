@@ -29,6 +29,23 @@ def test_token_response_contains_user_for_frontend_auth_store():
     assert Token.model_fields["user"].annotation is UserRead
 
 
+def test_auth_204_routes_declare_empty_responses():
+    auth_204_routes = [
+        route
+        for route in app.routes
+        if route.path in {"/auth/me/password", "/auth/me"}
+        and route.status_code == 204
+    ]
+
+    route_index = {(route.path, tuple(sorted(route.methods))): route for route in auth_204_routes}
+
+    password_route = route_index[("/auth/me/password", ("PUT",))]
+    delete_me_route = route_index[("/auth/me", ("DELETE",))]
+
+    assert password_route.response_model is None
+    assert delete_me_route.response_model is None
+
+
 def test_bill_contract_supports_autopay_flag():
     assert "autopay_enabled" in BillBase.model_fields
     assert "autopay_enabled" in BillUpdate.model_fields

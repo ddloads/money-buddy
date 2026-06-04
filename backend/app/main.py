@@ -33,6 +33,12 @@ async def lifespan(app: FastAPI):
                 "ADD COLUMN IF NOT EXISTS autopay_enabled BOOLEAN NOT NULL DEFAULT false"
             )
         )
+        await conn.execute(
+            text(
+                "ALTER TABLE bills "
+                "ADD COLUMN IF NOT EXISTS last_reminded_at TIMESTAMPTZ"
+            )
+        )
     logger.info("Database tables ready")
 
     yield

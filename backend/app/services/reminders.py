@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -32,6 +32,9 @@ async def check_and_send_reminders() -> dict[str, int]:
 
     stats = {"checked": 0, "sent": 0, "failed": 0, "skipped": 0}
 
+    # Only pick bills that have never been reminded, or were last reminded >20 hours ago
+    reminded_cutoff = now - timedelta(hours=20)
+
     async with AsyncSessionLocal() as db:
         result = await db.execute(
             select(Bill)
@@ -41,6 +44,10 @@ async def check_and_send_reminders() -> dict[str, int]:
                 Bill.due_date >= now,
                 Bill.due_date <= reminder_window,
                 User.is_active == True,  # noqa: E712
+                or_(
+                    Bill.last_reminded_at == None,  # noqa: E711
+                    Bill.last_reminded_at < reminded_cutoff,
+                ),
             )
             .options(selectinload(Bill.user))
             .order_by(Bill.due_date.asc())
@@ -48,7 +55,7 @@ async def check_and_send_reminders() -> dict[str, int]:
         bills = result.scalars().all()
 
         logger.info(
-            "Reminder check: found %d bills due within %d day(s)",
+            "Reminder check: found %d eligible bills due within %d day(s)",
             len(bills),
             settings.REMINDER_DAYS_BEFORE,
         )
@@ -73,9 +80,12 @@ async def check_and_send_reminders() -> dict[str, int]:
                 due_date=due_str,
             )
             if success:
+                bill.last_reminded_at = now
                 stats["sent"] += 1
             else:
                 stats["failed"] += 1
+
+        await db.commit()
 
     logger.info("Reminder run complete: %s", stats)
     return stats

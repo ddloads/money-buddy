@@ -1,20 +1,22 @@
 from __future__ import annotations
 
+import calendar
 import logging
 import math
 import os
 import uuid
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.bill import Bill
+from app.models.bill import Bill, RecurrenceInterval
 from app.models.user import User
 from app.schemas.bill import BillCreate, BillListResponse, BillRead, BillUpdate
 
@@ -26,6 +28,26 @@ MAX_UPLOAD_BYTES = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+def _next_due_date(due: datetime, interval: RecurrenceInterval) -> datetime:
+    """Advance a due date by one recurrence interval, clamping to end-of-month."""
+    if interval == RecurrenceInterval.DAILY:
+        return due + timedelta(days=1)
+    if interval == RecurrenceInterval.WEEKLY:
+        return due + timedelta(weeks=1)
+    if interval == RecurrenceInterval.BIWEEKLY:
+        return due + timedelta(weeks=2)
+    months = {
+        RecurrenceInterval.MONTHLY: 1,
+        RecurrenceInterval.QUARTERLY: 3,
+        RecurrenceInterval.YEARLY: 12,
+    }[interval]
+    m = due.month - 1 + months
+    year = due.year + m // 12
+    month = m % 12 + 1
+    day = min(due.day, calendar.monthrange(year, month)[1])
+    return due.replace(year=year, month=month, day=day)
+
+
 async def _get_bill_or_404(db: AsyncSession, bill_id: int, user_id: int) -> Bill:
     result = await db.execute(
         select(Bill)
@@ -45,16 +67,22 @@ async def list_bills(
     page_size: int = Query(20, ge=1, le=100),
     is_paid: Optional[bool] = Query(None),
     category_id: Optional[int] = Query(None),
+    search: Optional[str] = Query(None, max_length=100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> BillListResponse:
-    """List bills for the current user with optional filters and pagination."""
+    """List bills for the current user with optional filters, search, and pagination."""
     base_query = select(Bill).where(Bill.user_id == current_user.id)
 
     if is_paid is not None:
         base_query = base_query.where(Bill.is_paid == is_paid)
     if category_id is not None:
         base_query = base_query.where(Bill.category_id == category_id)
+    if search:
+        term = f"%{search}%"
+        base_query = base_query.where(
+            or_(Bill.name.ilike(term), Bill.notes.ilike(term))
+        )
 
     # Count total
     count_result = await db.execute(
@@ -149,8 +177,8 @@ async def mark_bill_paid(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Bill:
-    """Mark a bill as paid."""
-    from datetime import datetime, timezone
+    """Mark a bill as paid. For recurring bills, auto-creates the next instance."""
+    from datetime import timezone
 
     bill = await _get_bill_or_404(db, bill_id, current_user.id)
     if bill.is_paid:
@@ -159,6 +187,26 @@ async def mark_bill_paid(
         )
     bill.is_paid = True
     bill.paid_at = datetime.now(timezone.utc)
+
+    if bill.is_recurring and bill.recurrence_interval:
+        next_due = _next_due_date(bill.due_date, bill.recurrence_interval)
+        next_bill = Bill(
+            user_id=bill.user_id,
+            name=bill.name,
+            amount=bill.amount,
+            due_date=next_due,
+            is_recurring=True,
+            recurrence_interval=bill.recurrence_interval,
+            category_id=bill.category_id,
+            notes=bill.notes,
+            autopay_enabled=bill.autopay_enabled,
+        )
+        db.add(next_bill)
+        logger.info(
+            "Created next recurring bill '%s' due %s (from bill %s)",
+            next_bill.name, next_due.date(), bill.id,
+        )
+
     await db.flush()
     await db.refresh(bill)
     await db.refresh(bill, attribute_names=["category"])

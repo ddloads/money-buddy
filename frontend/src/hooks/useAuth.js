@@ -7,6 +7,12 @@ export function useAuth() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { setAuth, logout: storeLogout, user, token } = useAuthStore()
+  const googleAuthStatus = useQuery({
+    queryKey: ['auth', 'google-status'],
+    queryFn: () => authAPI.googleStatus().then((res) => res.data),
+    staleTime: 1000 * 60 * 10,
+    retry: false,
+  })
 
   // Login mutation
   const loginMutation = useMutation({
@@ -67,6 +73,8 @@ export function useAuth() {
     user,
     token,
     isAuthenticated: !!token,
+    googleAuthEnabled: !!googleAuthStatus.data?.enabled,
+    googleAuthStatus,
     login: loginMutation,
     register: registerMutation,
     logout: logoutMutation,

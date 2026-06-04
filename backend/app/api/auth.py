@@ -105,10 +105,19 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> di
     return {"access_token": token, "token_type": "bearer", "user": user}
 
 
+@router.get("/google/status")
+async def google_oauth_status():
+    return {"enabled": bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET)}
+
+
 @router.get("/google")
 async def google_login(request: Request):
     """Initiate the Google OAuth2 flow. Redirects to Google's consent screen."""
     if not (settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET):
+        accept = request.headers.get("accept", "")
+        if "text/html" in accept:
+            frontend_url = settings.FRONTEND_URL.rstrip("/")
+            return RedirectResponse(url=f"{frontend_url}/login?error=google_oauth_unavailable")
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Google OAuth is not configured",
@@ -120,10 +129,9 @@ async def google_login(request: Request):
 async def google_callback(request: Request, db: AsyncSession = Depends(get_db)):
     """Handle the Google OAuth2 callback."""
     if not (settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET):
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Google OAuth is not configured",
-        )
+        frontend_url = settings.FRONTEND_URL.rstrip("/")
+        return RedirectResponse(url=f"{frontend_url}/login?error=google_oauth_unavailable")
+
     try:
         google_token = await oauth.google.authorize_access_token(request)
     except Exception as exc:

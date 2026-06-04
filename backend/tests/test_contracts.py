@@ -46,6 +46,16 @@ def test_auth_204_routes_declare_empty_responses():
     assert delete_me_route.response_model is None
 
 
+def test_google_auth_status_endpoint_exists_for_frontend_contract():
+    route_index = {
+        (route.path, tuple(sorted(route.methods))): route
+        for route in app.routes
+        if getattr(route, "methods", None)
+    }
+
+    assert ("/auth/google/status", ("GET",)) in route_index
+
+
 def test_bill_contract_supports_autopay_flag():
     assert "autopay_enabled" in BillBase.model_fields
     assert "autopay_enabled" in BillUpdate.model_fields

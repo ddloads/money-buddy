@@ -46,6 +46,7 @@ export const authAPI = {
   register: (data) => api.post('/auth/register', data),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
+  googleStatus: () => api.get('/auth/google/status'),
   updateProfile: (data) => api.put('/auth/me', data),
   changePassword: (data) => api.put('/auth/me/password', data),
   deleteAccount: () => api.delete('/auth/me'),

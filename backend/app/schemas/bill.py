@@ -14,6 +14,7 @@ class BillBase(BaseModel):
     name: str
     amount: Decimal
     due_date: datetime
+    autopay_enabled: bool = False
     is_recurring: bool = False
     recurrence_interval: Optional[RecurrenceInterval] = None
     category_id: Optional[int] = None
@@ -43,6 +44,7 @@ class BillUpdate(BaseModel):
     name: Optional[str] = None
     amount: Optional[Decimal] = None
     due_date: Optional[datetime] = None
+    autopay_enabled: Optional[bool] = None
     is_recurring: Optional[bool] = None
     recurrence_interval: Optional[RecurrenceInterval] = None
     category_id: Optional[int] = None

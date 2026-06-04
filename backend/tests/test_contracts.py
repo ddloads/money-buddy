@@ -1,6 +1,7 @@
 from app.core.security import hash_password, verify_password
 from app.main import app
 from app.schemas.auth import Token
+from app.schemas.bill import BillBase, BillRead, BillUpdate
 from app.schemas.user import UserRead
 
 
@@ -26,3 +27,27 @@ def test_token_response_contains_user_for_frontend_auth_store():
 
     assert {"access_token", "token_type", "user"}.issubset(fields)
     assert Token.model_fields["user"].annotation is UserRead
+
+
+def test_bill_contract_supports_autopay_flag():
+    assert "autopay_enabled" in BillBase.model_fields
+    assert "autopay_enabled" in BillUpdate.model_fields
+    assert "autopay_enabled" in BillRead.model_fields
+    assert BillBase.model_fields["autopay_enabled"].default is False
+
+
+def test_bill_mutations_refresh_server_managed_columns_before_serialization():
+    route_sources = {
+        route.name: route.endpoint.__code__.co_names
+        for route in app.routes
+        if route.path in {
+            "/bills",
+            "/bills/{bill_id}",
+            "/bills/{bill_id}/pay",
+            "/bills/{bill_id}/unpay",
+        }
+    }
+
+    for route_name in {"create_bill", "update_bill", "mark_bill_paid", "mark_bill_unpaid"}:
+        assert route_name in route_sources
+        assert "refresh" in route_sources[route_name]

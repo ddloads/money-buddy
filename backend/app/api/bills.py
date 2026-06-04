@@ -91,6 +91,7 @@ async def create_bill(
     bill = Bill(**payload.model_dump(), user_id=current_user.id)
     db.add(bill)
     await db.flush()
+    await db.refresh(bill)
     await db.refresh(bill, attribute_names=["category"])
     logger.info("Bill created: id=%s user=%s", bill.id, current_user.id)
     return bill
@@ -119,6 +120,7 @@ async def update_bill(
     for field, value in update_data.items():
         setattr(bill, field, value)
     await db.flush()
+    await db.refresh(bill)
     await db.refresh(bill, attribute_names=["category"])
     return bill
 
@@ -158,6 +160,7 @@ async def mark_bill_paid(
     bill.is_paid = True
     bill.paid_at = datetime.now(timezone.utc)
     await db.flush()
+    await db.refresh(bill)
     await db.refresh(bill, attribute_names=["category"])
     return bill
 
@@ -177,6 +180,7 @@ async def mark_bill_unpaid(
     bill.is_paid = False
     bill.paid_at = None
     await db.flush()
+    await db.refresh(bill)
     await db.refresh(bill, attribute_names=["category"])
     return bill
 
@@ -231,6 +235,7 @@ async def upload_receipt(
 
     bill.receipt_path = save_path
     await db.flush()
+    await db.refresh(bill)
     await db.refresh(bill, attribute_names=["category"])
     logger.info("Receipt uploaded for bill %s → %s", bill.id, save_path)
     return bill

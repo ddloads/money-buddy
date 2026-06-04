@@ -41,6 +41,7 @@ class Bill(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     due_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     is_paid: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    autopay_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     recurrence_interval: Mapped[Optional[RecurrenceInterval]] = mapped_column(
         Enum(RecurrenceInterval), nullable=True

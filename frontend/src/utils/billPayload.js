@@ -7,6 +7,7 @@ export function normalizeBillFormData(data) {
   const normalized = {
     ...data,
     category_id: Number.isNaN(categoryId) ? null : categoryId,
+    autopay_enabled: Boolean(data.autopay_enabled),
     is_recurring: recurrence !== '',
     recurrence_interval: recurrence || null,
   }

@@ -1,5 +1,5 @@
 import { format, isPast, isToday, isTomorrow, differenceInDays } from 'date-fns'
-import { CheckCircleIcon, ClockIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline'
+import { CheckCircleIcon, ClockIcon, ExclamationCircleIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 import { useNavigate } from 'react-router-dom'
 import CategoryBadge from './CategoryBadge'
@@ -57,6 +57,12 @@ export default function BillCard({ bill, onMarkPaid, isMarkingPaid }) {
             </h3>
             {bill.is_recurring && (
               <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">↻ Recurring</span>
+            )}
+            {bill.autopay_enabled && (
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 flex-shrink-0">
+                <SparklesIcon className="h-3 w-3" />
+                Auto Pay
+              </span>
             )}
           </div>
 

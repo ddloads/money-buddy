@@ -25,6 +25,7 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
       amount: '',
       due_date: format(new Date(), 'yyyy-MM-dd'),
       category_id: '',
+      autopay_enabled: false,
       recurrence: '',
       notes: '',
       reminder_days: 3,
@@ -42,6 +43,7 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
           ? format(new Date(defaultValues.due_date), 'yyyy-MM-dd')
           : format(new Date(), 'yyyy-MM-dd'),
         category_id: defaultValues.category_id || defaultValues.category?.id || '',
+        autopay_enabled: Boolean(defaultValues.autopay_enabled),
         recurrence: defaultValues.recurrence_interval || defaultValues.recurrence || '',
         notes: defaultValues.notes || '',
         reminder_days: defaultValues.reminder_days ?? 3,
@@ -128,6 +130,27 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
           ))}
         </select>
       </div>
+
+      {/* Auto Pay */}
+      <label
+        htmlFor="autopay_enabled"
+        className="flex items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-gray-900/40 p-4 cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
+      >
+        <input
+          id="autopay_enabled"
+          type="checkbox"
+          className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 dark:border-gray-700 dark:bg-gray-900"
+          {...register('autopay_enabled')}
+        />
+        <span>
+          <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+            Auto pay is set up for this bill
+          </span>
+          <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            Show an Auto Pay badge on this bill so you know it is paid automatically.
+          </span>
+        </span>
+      </label>
 
       {/* Recurrence + Reminder */}
       <div className="grid grid-cols-2 gap-4">

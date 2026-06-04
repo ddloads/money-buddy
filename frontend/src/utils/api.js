@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useAuthStore } from '../store/authStore'
 
 const api = axios.create({
   baseURL: '/api',
@@ -25,12 +26,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear stored auth data
-      localStorage.removeItem('mb_token')
-      localStorage.removeItem('mb_user')
-      // Redirect to login (avoid import cycle with store)
+      // Clear all auth state (including Zustand's persisted mb_auth key) so the
+      // page reload below starts with a clean slate and doesn't bounce back to /dashboard.
+      useAuthStore.getState().logout()
       if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
+        window.location.replace('/login')
       }
     }
     return Promise.reject(error)

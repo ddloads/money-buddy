@@ -12,6 +12,7 @@ import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 import { format } from 'date-fns'
 import BillForm from '../components/BillForm'
 import CategoryBadge from '../components/CategoryBadge'
+import { normalizeBillFormData } from '../utils/billPayload'
 import {
   useBill,
   useCreateBill,
@@ -62,10 +63,11 @@ export default function BillDetail({ isNew = false }) {
   const deleteReceipt = useDeleteReceipt(id)
 
   const handleSubmit = (data) => {
+    const payload = normalizeBillFormData(data)
     if (isNew) {
-      createBill.mutate(data, { onSuccess: () => navigate('/bills') })
+      createBill.mutate(payload, { onSuccess: () => navigate('/bills') })
     } else {
-      updateBill.mutate(data)
+      updateBill.mutate(payload)
     }
   }
 

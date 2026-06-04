@@ -50,8 +50,8 @@ async def _get_user_by_google_id(db: AsyncSession, google_id: str) -> Optional[U
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
+@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
+async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> dict:
     """Register a new user with email and password."""
     existing = await _get_user_by_email(db, payload.email)
     if existing:
@@ -59,16 +59,24 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> U
             status_code=status.HTTP_409_CONFLICT,
             detail="A user with this email already exists",
         )
+
+    username = payload.username
+    if not username:
+        username = " ".join(
+            part for part in [payload.first_name, payload.last_name] if part
+        ) or None
+
     user = User(
         email=payload.email,
-        username=payload.username,
+        username=username,
         hashed_password=hash_password(payload.password),
     )
     db.add(user)
     await db.flush()
     await db.refresh(user)
     logger.info("New user registered: %s (id=%s)", user.email, user.id)
-    return user
+    token = create_access_token(subject=user.id)
+    return {"access_token": token, "token_type": "bearer", "user": user}
 
 
 @router.post("/login", response_model=Token)
@@ -91,7 +99,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)) -> di
             detail="User account is disabled",
         )
     token = create_access_token(subject=user.id)
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "token_type": "bearer", "user": user}
 
 
 @router.get("/google")

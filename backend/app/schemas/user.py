@@ -13,6 +13,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
     @field_validator("password")
     @classmethod
@@ -40,5 +42,7 @@ class UserRead(UserBase):
     is_active: bool
     created_at: datetime
     google_id: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
     model_config = {"from_attributes": True}

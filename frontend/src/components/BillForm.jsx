@@ -42,7 +42,7 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
           ? format(new Date(defaultValues.due_date), 'yyyy-MM-dd')
           : format(new Date(), 'yyyy-MM-dd'),
         category_id: defaultValues.category_id || defaultValues.category?.id || '',
-        recurrence: defaultValues.recurrence || '',
+        recurrence: defaultValues.recurrence_interval || defaultValues.recurrence || '',
         notes: defaultValues.notes || '',
         reminder_days: defaultValues.reminder_days ?? 3,
       })

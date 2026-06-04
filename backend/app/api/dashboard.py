@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 from typing import Any
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import and_, extract, func, select
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import extract, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -18,29 +17,9 @@ from app.schemas.bill import BillRead
 router = APIRouter()
 
 
-@router.get("", response_model=dict[str, Any])
-async def get_dashboard(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> dict[str, Any]:
-    """
-    Return high-level bill statistics for the current user.
-
-    Response includes:
-    - total_bills:          Total number of bills
-    - paid_count:           Number of paid bills
-    - unpaid_count:         Number of unpaid bills
-    - total_amount:         Sum of all bill amounts
-    - total_paid_amount:    Sum of paid bill amounts
-    - total_unpaid_amount:  Sum of unpaid bill amounts
-    - total_due_this_month: Sum of amounts due in the current calendar month
-    - upcoming_bills:       Bills with due_date within the next 7 days (unpaid)
-    - monthly_breakdown:    Per-month totals (last 12 months)
-    """
-    user_id = current_user.id
+async def _summary_data(db: AsyncSession, user_id: int) -> dict[str, Any]:
     now = datetime.now(timezone.utc)
 
-    # ── Aggregate counts & sums ────────────────────────────────────────────────
     agg_result = await db.execute(
         select(
             func.count(Bill.id).label("total"),
@@ -51,51 +30,92 @@ async def get_dashboard(
     )
     agg = agg_result.one()
 
-    # ── Total due this month ───────────────────────────────────────────────────
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    if now.month == 12:
-        month_end = now.replace(year=now.year + 1, month=1, day=1)
-    else:
-        month_end = now.replace(month=now.month + 1, day=1)
+    month_end = (
+        now.replace(year=now.year + 1, month=1, day=1)
+        if now.month == 12
+        else now.replace(month=now.month + 1, day=1)
+    )
 
     month_result = await db.execute(
-        select(func.coalesce(func.sum(Bill.amount), 0)).where(
+        select(
+            func.coalesce(func.sum(Bill.amount), 0).label("due"),
+            func.coalesce(func.sum(Bill.amount).filter(Bill.is_paid == True), 0).label("paid"),  # noqa: E712
+        ).where(
             Bill.user_id == user_id,
             Bill.due_date >= month_start,
             Bill.due_date < month_end,
         )
     )
-    total_due_this_month = month_result.scalar_one()
+    month = month_result.one()
 
-    # ── Upcoming bills (next 7 days, unpaid) ──────────────────────────────────
-    in_7_days = now + timedelta(days=7)
-    upcoming_result = await db.execute(
+    overdue_result = await db.execute(
+        select(func.count(Bill.id)).where(
+            Bill.user_id == user_id,
+            Bill.is_paid == False,  # noqa: E712
+            Bill.due_date < now,
+        )
+    )
+
+    total = int(agg.total)
+    paid_count = int(agg.paid_count)
+    unpaid_count = total - paid_count
+    total_amount = float(agg.total_amount)
+    paid_amount = float(agg.paid_amount)
+    amount_due_this_month = float(month.due)
+    amount_paid_this_month = float(month.paid)
+
+    return {
+        # Current frontend contract
+        "total_bills": total,
+        "paid_bills": paid_count,
+        "unpaid_bills": unpaid_count,
+        "paid_percentage": round((paid_count / total) * 100) if total else 0,
+        "overdue_bills": int(overdue_result.scalar_one()),
+        "amount_due_this_month": amount_due_this_month,
+        "amount_paid_this_month": amount_paid_this_month,
+        # Backward-compatible names from the original combined endpoint
+        "paid_count": paid_count,
+        "unpaid_count": unpaid_count,
+        "total_amount": total_amount,
+        "total_paid_amount": paid_amount,
+        "total_unpaid_amount": total_amount - paid_amount,
+        "total_due_this_month": amount_due_this_month,
+    }
+
+
+async def _upcoming_bills(db: AsyncSession, user_id: int, days: int = 7) -> list[BillRead]:
+    now = datetime.now(timezone.utc)
+    until = now + timedelta(days=days)
+    result = await db.execute(
         select(Bill)
         .where(
             Bill.user_id == user_id,
             Bill.is_paid == False,  # noqa: E712
             Bill.due_date >= now,
-            Bill.due_date <= in_7_days,
+            Bill.due_date <= until,
         )
         .options(selectinload(Bill.category))
         .order_by(Bill.due_date.asc())
     )
-    upcoming_bills = upcoming_result.scalars().all()
+    return [BillRead.model_validate(bill) for bill in result.scalars().all()]
 
-    # ── Monthly breakdown (last 12 months) ────────────────────────────────────
-    twelve_months_ago = now - timedelta(days=365)
-    monthly_result = await db.execute(
+
+async def _monthly_breakdown(db: AsyncSession, user_id: int, months: int = 12) -> list[dict[str, Any]]:
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(days=months * 31)
+    result = await db.execute(
         select(
             extract("year", Bill.due_date).label("year"),
             extract("month", Bill.due_date).label("month"),
             func.coalesce(func.sum(Bill.amount), 0).label("total"),
             func.coalesce(func.sum(Bill.amount).filter(Bill.is_paid == True), 0).label("paid"),  # noqa: E712
         )
-        .where(Bill.user_id == user_id, Bill.due_date >= twelve_months_ago)
+        .where(Bill.user_id == user_id, Bill.due_date >= since)
         .group_by("year", "month")
         .order_by("year", "month")
     )
-    monthly_breakdown = [
+    return [
         {
             "year": int(row.year),
             "month": int(row.month),
@@ -103,22 +123,47 @@ async def get_dashboard(
             "paid": float(row.paid),
             "unpaid": float(row.total) - float(row.paid),
         }
-        for row in monthly_result.all()
+        for row in result.all()
     ]
 
-    total = int(agg.total)
-    paid_count = int(agg.paid_count)
-    total_amount = float(agg.total_amount)
-    paid_amount = float(agg.paid_amount)
 
+@router.get("", response_model=dict[str, Any])
+async def get_dashboard(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Return the original combined dashboard payload."""
     return {
-        "total_bills": total,
-        "paid_count": paid_count,
-        "unpaid_count": total - paid_count,
-        "total_amount": total_amount,
-        "total_paid_amount": paid_amount,
-        "total_unpaid_amount": total_amount - paid_amount,
-        "total_due_this_month": float(total_due_this_month),
-        "upcoming_bills": [BillRead.model_validate(b) for b in upcoming_bills],
-        "monthly_breakdown": monthly_breakdown,
+        **await _summary_data(db, current_user.id),
+        "upcoming_bills": await _upcoming_bills(db, current_user.id, days=7),
+        "monthly_breakdown": await _monthly_breakdown(db, current_user.id, months=12),
     }
+
+
+@router.get("/summary", response_model=dict[str, Any])
+async def get_dashboard_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Return summary cards data used by the React dashboard."""
+    return await _summary_data(db, current_user.id)
+
+
+@router.get("/upcoming", response_model=list[BillRead])
+async def get_dashboard_upcoming(
+    days: int = Query(7, ge=1, le=365),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[BillRead]:
+    """Return unpaid bills due within the requested number of days."""
+    return await _upcoming_bills(db, current_user.id, days=days)
+
+
+@router.get("/monthly", response_model=list[dict[str, Any]])
+async def get_dashboard_monthly(
+    months: int = Query(6, ge=1, le=24),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    """Return monthly paid/unpaid totals for the chart."""
+    return await _monthly_breakdown(db, current_user.id, months=months)

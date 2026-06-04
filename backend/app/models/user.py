@@ -29,3 +29,17 @@ class User(Base):
     categories: Mapped[List["Category"]] = relationship(  # noqa: F821
         "Category", back_populates="user", cascade="all, delete-orphan"
     )
+
+    @property
+    def first_name(self) -> Optional[str]:
+        """Best-effort first name derived from the stored display name."""
+        if not self.username:
+            return None
+        return self.username.split(" ", 1)[0]
+
+    @property
+    def last_name(self) -> Optional[str]:
+        """Best-effort last name derived from the stored display name."""
+        if not self.username or " " not in self.username:
+            return None
+        return self.username.split(" ", 1)[1]

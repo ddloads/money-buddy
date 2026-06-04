@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form'
 import { useEffect } from 'react'
 import { useCategories } from '../hooks/useCategories'
 import { toDateInputValue } from '../utils/billDates'
+import { useCurrency } from '../hooks/useCurrency'
 
 const RECURRENCE_OPTIONS = [
   { value: '', label: 'One-time' },
@@ -13,6 +14,7 @@ const RECURRENCE_OPTIONS = [
 
 export default function BillForm({ defaultValues, onSubmit, isLoading, submitLabel = 'Save Bill' }) {
   const { data: categories } = useCategories()
+  const { symbol } = useCurrency()
 
   const {
     register,
@@ -75,7 +77,7 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
             Amount <span className="text-red-500">*</span>
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">{symbol}</span>
             <input
               id="amount"
               type="number"

@@ -90,4 +90,13 @@ export const dashboardAPI = {
   upcoming: (days = 7) => api.get('/dashboard/upcoming', { params: { days } }),
   monthlyStats: (months = 6) => api.get('/dashboard/monthly', { params: { months } }),
   categoryStats: () => api.get('/dashboard/categories'),
+  yearlyStats: () => api.get('/dashboard/yearly'),
+}
+
+// ─── Templates ─────────────────────────────────────────────────────────────
+
+export const templatesAPI = {
+  list: () => api.get('/templates'),
+  create: (data) => api.post('/templates', data),
+  delete: (id) => api.delete(`/templates/${id}`),
 }

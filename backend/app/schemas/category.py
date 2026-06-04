@@ -9,6 +9,7 @@ class CategoryBase(BaseModel):
     name: str
     color: Optional[str] = None
     icon: Optional[str] = None
+    monthly_budget: Optional[float] = None
 
     @field_validator("color")
     @classmethod
@@ -26,6 +27,7 @@ class CategoryUpdate(BaseModel):
     name: Optional[str] = None
     color: Optional[str] = None
     icon: Optional[str] = None
+    monthly_budget: Optional[float] = None
 
     @field_validator("color")
     @classmethod

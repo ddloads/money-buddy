@@ -32,6 +32,7 @@ class UserUpdate(BaseModel):
     notif_email_reminders: Optional[bool] = None
     notif_overdue_alerts: Optional[bool] = None
     notif_weekly_summary: Optional[bool] = None
+    currency: Optional[str] = None
 
 
 class PasswordChange(BaseModel):
@@ -56,5 +57,6 @@ class UserRead(UserBase):
     notif_email_reminders: bool = True
     notif_overdue_alerts: bool = True
     notif_weekly_summary: bool = True
+    currency: str = 'USD'
 
     model_config = {"from_attributes": True}

@@ -9,9 +9,29 @@ import {
   CheckIcon,
   SunIcon,
   MoonIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../hooks/useAuth'
 import { useAuthStore } from '../store/authStore'
+
+const CURRENCIES = [
+  { code: 'USD', label: 'US Dollar (USD)' },
+  { code: 'EUR', label: 'Euro (EUR)' },
+  { code: 'GBP', label: 'British Pound (GBP)' },
+  { code: 'CAD', label: 'Canadian Dollar (CAD)' },
+  { code: 'AUD', label: 'Australian Dollar (AUD)' },
+  { code: 'JPY', label: 'Japanese Yen (JPY)' },
+  { code: 'CHF', label: 'Swiss Franc (CHF)' },
+  { code: 'INR', label: 'Indian Rupee (INR)' },
+  { code: 'MXN', label: 'Mexican Peso (MXN)' },
+  { code: 'BRL', label: 'Brazilian Real (BRL)' },
+  { code: 'SGD', label: 'Singapore Dollar (SGD)' },
+  { code: 'HKD', label: 'Hong Kong Dollar (HKD)' },
+  { code: 'NZD', label: 'New Zealand Dollar (NZD)' },
+  { code: 'SEK', label: 'Swedish Krona (SEK)' },
+  { code: 'NOK', label: 'Norwegian Krone (NOK)' },
+  { code: 'DKK', label: 'Danish Krone (DKK)' },
+]
 
 function Section({ title, icon: Icon, children }) {
   return (
@@ -173,6 +193,25 @@ export default function Settings() {
               }`}
             />
           </button>
+        </div>
+      </Section>
+
+      {/* ── Currency ─────────────────────────────────────────────────────── */}
+      <Section title="Currency" icon={CurrencyDollarIcon}>
+        <div>
+          <label className="label">Display Currency</label>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            All amounts will be displayed in the selected currency.
+          </p>
+          <select
+            className="input"
+            value={user?.currency || 'USD'}
+            onChange={(e) => updateProfile.mutate({ currency: e.target.value })}
+          >
+            {CURRENCIES.map(({ code, label }) => (
+              <option key={code} value={code}>{label}</option>
+            ))}
+          </select>
         </div>
       </Section>
 

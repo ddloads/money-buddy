@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import List, Optional
 
-from sqlalchemy import BigInteger, ForeignKey, String
+from sqlalchemy import BigInteger, ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -18,6 +19,7 @@ class Category(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)   # e.g. "#FF5733"
     icon: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)   # e.g. "home", "car"
+    monthly_budget: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="categories")  # noqa: F821

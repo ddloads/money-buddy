@@ -21,6 +21,7 @@ class User(Base):
     notif_email_reminders: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     notif_overdue_alerts: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     notif_weekly_summary: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    currency: Mapped[str] = mapped_column(String(10), default='USD', nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

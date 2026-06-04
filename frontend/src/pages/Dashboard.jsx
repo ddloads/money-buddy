@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   DocumentTextIcon,
@@ -12,16 +13,21 @@ import StatCard from '../components/StatCard'
 import UpcomingBills from '../components/UpcomingBills'
 import MonthlyChart from '../components/MonthlyChart'
 import CategoryChart from '../components/CategoryChart'
-import { useDashboardSummary, useUpcomingBills, useMonthlyStats, useCategoryStats } from '../hooks/useDashboard'
+import YearlyChart from '../components/YearlyChart'
+import { useDashboardSummary, useUpcomingBills, useMonthlyStats, useCategoryStats, useYearlyStats } from '../hooks/useDashboard'
 import { useAuthStore } from '../store/authStore'
+import { useCurrency } from '../hooks/useCurrency'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
+  const { format: formatCurrency } = useCurrency()
+  const [showYearly, setShowYearly] = useState(false)
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
   const { data: upcoming, isLoading: upcomingLoading } = useUpcomingBills(7)
   const { data: monthly, isLoading: monthlyLoading } = useMonthlyStats(6)
   const { data: categories, isLoading: categoriesLoading } = useCategoryStats()
+  const { data: yearly, isLoading: yearlyLoading } = useYearlyStats()
 
   const firstName = user?.first_name || user?.name?.split(' ')[0] || 'there'
   const today = format(new Date(), 'EEEE, MMMM d')
@@ -71,8 +77,8 @@ export default function Dashboard() {
         />
         <StatCard
           title="Due This Month"
-          value={summaryLoading ? '…' : `$${parseFloat(summary?.amount_due_this_month ?? 0).toFixed(2)}`}
-          subtitle={`$${parseFloat(summary?.amount_paid_this_month ?? 0).toFixed(2)} paid so far`}
+          value={summaryLoading ? '…' : formatCurrency(summary?.amount_due_this_month ?? 0)}
+          subtitle={`${formatCurrency(summary?.amount_paid_this_month ?? 0)} paid so far`}
           Icon={CurrencyDollarIcon}
           color="purple"
           loading={summaryLoading}
@@ -128,13 +134,13 @@ export default function Dashboard() {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Amount paid</span>
                     <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                      ${parseFloat(summary?.amount_paid_this_month ?? 0).toFixed(2)}
+                      {formatCurrency(summary?.amount_paid_this_month ?? 0)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500 dark:text-gray-400">Still owed</span>
                     <span className="font-semibold text-red-500">
-                      ${Math.max(0, parseFloat(summary?.amount_due_this_month ?? 0) - parseFloat(summary?.amount_paid_this_month ?? 0)).toFixed(2)}
+                      {formatCurrency(Math.max(0, parseFloat(summary?.amount_due_this_month ?? 0) - parseFloat(summary?.amount_paid_this_month ?? 0)))}
                     </span>
                   </div>
                 </div>
@@ -180,6 +186,30 @@ export default function Dashboard() {
           </div>
           <CategoryChart data={categories} loading={categoriesLoading} />
         </div>
+      </div>
+
+      {/* Year-over-year chart */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="section-title">Year-over-Year</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              Monthly spending comparison across years
+            </p>
+          </div>
+          <button
+            onClick={() => setShowYearly((v) => !v)}
+            className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
+          >
+            {showYearly ? 'Hide' : 'Show'}
+          </button>
+        </div>
+        {showYearly && <YearlyChart data={yearly} loading={yearlyLoading} />}
+        {!showYearly && (
+          <div className="h-12 flex items-center justify-center">
+            <p className="text-sm text-gray-400 dark:text-gray-500">Click "Show" to compare years</p>
+          </div>
+        )}
       </div>
     </div>
   )

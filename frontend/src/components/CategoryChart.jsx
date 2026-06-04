@@ -1,11 +1,12 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useCurrency } from '../hooks/useCurrency'
 
 const FALLBACK_COLORS = [
   '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6',
   '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
 ]
 
-const CustomTooltip = ({ active, payload }) => {
+const CustomTooltip = ({ active, payload, format }) => {
   if (!active || !payload?.length) return null
   const { name, value, payload: d } = payload[0]
   return (
@@ -14,7 +15,7 @@ const CustomTooltip = ({ active, payload }) => {
         {d.icon ? `${d.icon} ` : ''}{name}
       </p>
       <p className="text-gray-600 dark:text-gray-400">
-        Total: <span className="font-medium text-gray-900 dark:text-gray-100">${value.toFixed(2)}</span>
+        Total: <span className="font-medium text-gray-900 dark:text-gray-100">{format(value)}</span>
       </p>
       <p className="text-gray-500 dark:text-gray-400 text-xs">{d.count} bill{d.count !== 1 ? 's' : ''}</p>
     </div>
@@ -22,6 +23,7 @@ const CustomTooltip = ({ active, payload }) => {
 }
 
 export default function CategoryChart({ data, loading }) {
+  const { format } = useCurrency()
   if (loading) {
     return (
       <div className="h-56 flex items-center justify-center">
@@ -75,7 +77,7 @@ export default function CategoryChart({ data, loading }) {
             />
           ))}
         </Pie>
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip format={format} />} />
         <Legend
           formatter={(value) => (
             <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{value}</span>

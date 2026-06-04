@@ -29,6 +29,14 @@ export function useMonthlyStats(months = 6) {
   return useQuery({
     queryKey: ['dashboard', 'monthly', months],
     queryFn: () => dashboardAPI.monthlyStats(months).then((r) => r.data),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+export function useYearlyStats() {
+  return useQuery({
+    queryKey: ['dashboard', 'yearly'],
+    queryFn: () => dashboardAPI.yearlyStats().then((r) => r.data),
+    staleTime: 1000 * 60 * 10,
   })
 }

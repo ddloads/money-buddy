@@ -13,6 +13,7 @@ import BillForm from '../components/BillForm'
 import CategoryBadge from '../components/CategoryBadge'
 import { formatBillDate } from '../utils/billDates'
 import { normalizeBillFormData } from '../utils/billPayload'
+import { useCurrency } from '../hooks/useCurrency'
 import {
   useBill,
   useCreateBill,
@@ -55,6 +56,7 @@ export default function BillDetail({ isNew = false }) {
   const [showPayDialog, setShowPayDialog] = useState(false)
   const [activeTab, setActiveTab] = useState('details') // details | receipt | history
 
+  const { format } = useCurrency()
   const { data: bill, isLoading } = useBill(isNew ? null : id)
   const { data: paymentHistory } = usePaymentHistory(isNew ? null : id)
   const createBill = useCreateBill()
@@ -339,7 +341,7 @@ export default function BillDetail({ isNew = false }) {
                       </p>
                     </div>
                     <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      ${parseFloat(entry.amount).toFixed(2)}
+                      {format(entry.amount)}
                     </span>
                   </div>
                 </li>
@@ -363,7 +365,7 @@ export default function BillDetail({ isNew = false }) {
       <ConfirmDialog
         open={showPayDialog}
         title="Mark as paid?"
-        message={`Mark "${bill?.name}" ($${parseFloat(bill?.amount || 0).toFixed(2)}) as paid today?`}
+        message={`Mark "${bill?.name}" (${format(bill?.amount || 0)}) as paid today?`}
         onConfirm={handleMarkPaid}
         onCancel={() => setShowPayDialog(false)}
         confirmLabel="Mark Paid"

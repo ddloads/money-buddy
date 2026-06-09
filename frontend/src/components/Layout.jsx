@@ -11,6 +11,7 @@ import {
   MoonIcon,
   ArrowRightOnRectangleIcon,
   PlusCircleIcon,
+  BanknotesIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../store/authStore'
 import { useAuth } from '../hooks/useAuth'
@@ -18,6 +19,7 @@ import { useAuth } from '../hooks/useAuth'
 const navLinks = [
   { to: '/dashboard', label: 'Dashboard', Icon: HomeIcon },
   { to: '/bills', label: 'Bills', Icon: DocumentTextIcon },
+  { to: '/income', label: 'Income', Icon: BanknotesIcon },
   { to: '/categories', label: 'Categories', Icon: TagIcon },
   { to: '/settings', label: 'Settings', Icon: Cog6ToothIcon },
 ]

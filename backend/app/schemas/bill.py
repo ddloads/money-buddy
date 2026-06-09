@@ -19,6 +19,8 @@ class BillBase(BaseModel):
     is_recurring: bool = False
     recurrence_interval: Optional[RecurrenceInterval] = None
     category_id: Optional[int] = None
+    interest_rate: Optional[Decimal] = None
+    remaining_balance: Optional[Decimal] = None
     notes: Optional[str] = None
 
     @field_validator("amount")
@@ -49,6 +51,8 @@ class BillUpdate(BaseModel):
     is_recurring: Optional[bool] = None
     recurrence_interval: Optional[RecurrenceInterval] = None
     category_id: Optional[int] = None
+    interest_rate: Optional[Decimal] = None
+    remaining_balance: Optional[Decimal] = None
     notes: Optional[str] = None
 
     @field_validator("amount")

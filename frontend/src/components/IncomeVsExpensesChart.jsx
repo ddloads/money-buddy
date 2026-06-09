@@ -1,0 +1,96 @@
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
+import { useCurrency } from '../hooks/useCurrency'
+
+const CustomTooltip = ({ active, payload, label, format }) => {
+  if (!active || !payload || !payload.length) return null
+  const income = payload.find((p) => p.dataKey === 'income')
+  const expenses = payload.find((p) => p.dataKey === 'expenses')
+  const net = income && expenses ? income.value - expenses.value : null
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 min-w-[160px]">
+      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{label}</p>
+      {payload.map((entry) => (
+        <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
+          <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }} />
+          <span className="text-gray-600 dark:text-gray-400 capitalize">{entry.name}:</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">{format(entry.value)}</span>
+        </div>
+      ))}
+      {net !== null && (
+        <div className={`mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-sm font-semibold ${net >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+          Net: {net >= 0 ? '+' : ''}{format(net)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function IncomeVsExpensesChart({ data, loading }) {
+  const { format } = useCurrency()
+
+  if (loading) {
+    return (
+      <div className="h-64 flex items-end gap-2 px-4 pb-6">
+        {[60, 80, 50, 90, 70, 85].map((h, i) => (
+          <div key={i} className="flex-1 flex flex-col justify-end gap-1">
+            <div className="skeleton rounded-t-sm" style={{ height: `${h}%` }} />
+            <div className="skeleton h-3 w-full rounded" />
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-64 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-3xl mb-2">💰</div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">No data yet — add income sources to compare</p>
+        </div>
+      </div>
+    )
+  }
+
+  const chartData = data.map((d) => ({ ...d, month: d.month_name }))
+
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(156,163,175,0.2)" vertical={false} />
+        <XAxis
+          dataKey="month"
+          tick={{ fontSize: 12, fill: 'currentColor' }}
+          axisLine={false}
+          tickLine={false}
+          className="text-gray-500 dark:text-gray-400"
+        />
+        <YAxis
+          tick={{ fontSize: 11, fill: 'currentColor' }}
+          axisLine={false}
+          tickLine={false}
+          tickFormatter={(v) => format(v)}
+          className="text-gray-500 dark:text-gray-400"
+          width={55}
+        />
+        <Tooltip content={<CustomTooltip format={format} />} cursor={{ fill: 'rgba(16,185,129,0.05)' }} />
+        <Legend
+          formatter={(value) => (
+            <span className="text-xs font-medium capitalize text-gray-600 dark:text-gray-400">{value}</span>
+          )}
+        />
+        <Bar dataKey="income" name="Income" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+        <Bar dataKey="expenses" name="Expenses" fill="#f59e0b" radius={[4, 4, 0, 0]} maxBarSize={40} />
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}

@@ -96,3 +96,12 @@ export function usePaymentHistory(billId) {
     enabled: !!billId && billId !== 'new',
   })
 }
+
+export function usePayoffEstimate(billId) {
+  return useQuery({
+    queryKey: [BILLS_KEY, billId, 'payoff'],
+    queryFn: () => billsAPI.payoffEstimate(billId).then((r) => r.data),
+    enabled: !!billId && billId !== 'new',
+    retry: false,
+  })
+}

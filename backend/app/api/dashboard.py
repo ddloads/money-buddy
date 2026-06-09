@@ -12,6 +12,7 @@ from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.bill import Bill
 from app.models.category import Category
+from app.models.income import Income, IncomeFrequency
 from app.models.user import User
 from app.schemas.bill import BillRead
 
@@ -66,6 +67,24 @@ async def _summary_data(db: AsyncSession, user_id: int) -> dict[str, Any]:
     amount_due_this_month = float(month.due)
     amount_paid_this_month = float(month.paid)
 
+    # Compute monthly income equivalent from active sources
+    income_result = await db.execute(
+        select(Income.amount, Income.frequency)
+        .where(Income.user_id == user_id, Income.is_active == True)  # noqa: E712
+    )
+    freq_multipliers = {
+        IncomeFrequency.WEEKLY: 4.333,
+        IncomeFrequency.BIWEEKLY: 2.167,
+        IncomeFrequency.MONTHLY: 1.0,
+        IncomeFrequency.QUARTERLY: 1 / 3,
+        IncomeFrequency.YEARLY: 1 / 12,
+        IncomeFrequency.ONE_TIME: 0.0,
+    }
+    monthly_income = sum(
+        float(row.amount) * freq_multipliers.get(row.frequency, 0)
+        for row in income_result.all()
+    )
+
     return {
         # Current frontend contract
         "total_bills": total,
@@ -75,6 +94,7 @@ async def _summary_data(db: AsyncSession, user_id: int) -> dict[str, Any]:
         "overdue_bills": int(overdue_result.scalar_one()),
         "amount_due_this_month": amount_due_this_month,
         "amount_paid_this_month": amount_paid_this_month,
+        "monthly_income": round(monthly_income, 2),
         # Backward-compatible names from the original combined endpoint
         "paid_count": paid_count,
         "unpaid_count": unpaid_count,
@@ -223,6 +243,83 @@ async def get_category_breakdown(
 
 
 MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+FREQ_MULTIPLIERS = {
+    IncomeFrequency.WEEKLY: 4.333,
+    IncomeFrequency.BIWEEKLY: 2.167,
+    IncomeFrequency.MONTHLY: 1.0,
+    IncomeFrequency.QUARTERLY: 1 / 3,
+    IncomeFrequency.YEARLY: 1 / 12,
+    IncomeFrequency.ONE_TIME: None,
+}
+
+
+@router.get("/income-vs-expenses", response_model=list[dict[str, Any]])
+async def get_income_vs_expenses(
+    months: int = Query(6, ge=1, le=24),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[dict[str, Any]]:
+    """Return monthly income vs expenses comparison for the last N months."""
+    now = datetime.now(timezone.utc)
+
+    # Build ordered list of (year, month) for the last N months
+    month_list = []
+    for i in range(months - 1, -1, -1):
+        m = now.month - i
+        y = now.year
+        while m <= 0:
+            m += 12
+            y -= 1
+        month_list.append((y, m))
+
+    earliest_year, earliest_month = month_list[0]
+    since = datetime(earliest_year, earliest_month, 1, tzinfo=timezone.utc)
+
+    # Monthly expenses from bills
+    expenses_result = await db.execute(
+        select(
+            extract("year", Bill.due_date).label("year"),
+            extract("month", Bill.due_date).label("month"),
+            func.coalesce(func.sum(Bill.amount), 0).label("expenses"),
+        )
+        .where(Bill.user_id == current_user.id, Bill.due_date >= since)
+        .group_by("year", "month")
+    )
+    expenses_by_ym = {
+        (int(r.year), int(r.month)): float(r.expenses) for r in expenses_result.all()
+    }
+
+    # Active income sources
+    incomes_result = await db.execute(
+        select(Income).where(
+            Income.user_id == current_user.id, Income.is_active == True  # noqa: E712
+        )
+    )
+    incomes = incomes_result.scalars().all()
+
+    monthly_recurring = sum(
+        float(inc.amount) * FREQ_MULTIPLIERS[inc.frequency]
+        for inc in incomes
+        if FREQ_MULTIPLIERS.get(inc.frequency) is not None
+    )
+
+    one_time_by_ym: dict[tuple[int, int], float] = {}
+    for inc in incomes:
+        if inc.frequency == IncomeFrequency.ONE_TIME and inc.start_date:
+            key = (inc.start_date.year, inc.start_date.month)
+            one_time_by_ym[key] = one_time_by_ym.get(key, 0) + float(inc.amount)
+
+    return [
+        {
+            "year": y,
+            "month": m,
+            "month_name": MONTH_NAMES[m - 1],
+            "income": round(monthly_recurring + one_time_by_ym.get((y, m), 0.0), 2),
+            "expenses": round(expenses_by_ym.get((y, m), 0.0), 2),
+        }
+        for y, m in month_list
+    ]
 
 
 @router.get("/yearly", response_model=list[dict[str, Any]])

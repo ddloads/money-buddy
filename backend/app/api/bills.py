@@ -7,8 +7,9 @@ import logging
 import math
 import os
 import uuid
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import date, datetime, timedelta
+from decimal import Decimal
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
@@ -233,6 +234,15 @@ async def mark_bill_paid(
     bill.paid_at = datetime.now(timezone.utc)
     db.add(Payment(bill_id=bill.id, user_id=bill.user_id, action="paid", amount=bill.amount))
 
+    # Apply interest and reduce remaining balance for loans/credit cards
+    next_balance: Optional[Decimal] = None
+    if bill.remaining_balance is not None and bill.remaining_balance > 0:
+        monthly_rate = Decimal(str(bill.interest_rate or 0)) / 100 / 12
+        interest_charged = bill.remaining_balance * monthly_rate
+        new_balance = bill.remaining_balance + interest_charged - bill.amount
+        bill.remaining_balance = max(Decimal("0"), new_balance.quantize(Decimal("0.01")))
+        next_balance = bill.remaining_balance if bill.remaining_balance > 0 else None
+
     if bill.is_recurring and bill.recurrence_interval:
         next_due = _next_due_date(bill.due_date, bill.recurrence_interval)
         next_bill = Bill(
@@ -245,6 +255,8 @@ async def mark_bill_paid(
             category_id=bill.category_id,
             notes=bill.notes,
             autopay_enabled=bill.autopay_enabled,
+            interest_rate=bill.interest_rate,
+            remaining_balance=next_balance,
         )
         db.add(next_bill)
         logger.info(
@@ -349,3 +361,88 @@ async def upload_receipt(
     await db.refresh(bill, attribute_names=["category"])
     logger.info("Receipt uploaded for bill %s → %s", bill.id, save_path)
     return bill
+
+
+_MONTH_NAMES = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+]
+
+
+@router.get("/{bill_id}/payoff", response_model=dict[str, Any])
+async def get_payoff_estimate(
+    bill_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Return an amortization schedule and estimated payoff date for a bill with a remaining balance."""
+    bill = await _get_bill_or_404(db, bill_id, current_user.id)
+
+    if not bill.remaining_balance or bill.remaining_balance <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="This bill has no remaining balance set.",
+        )
+
+    balance = float(bill.remaining_balance)
+    payment = float(bill.amount)
+    annual_rate = float(bill.interest_rate or 0)
+    monthly_rate = annual_rate / 100 / 12
+
+    # Guard: payment must exceed monthly interest to ever pay off
+    if monthly_rate > 0 and payment <= balance * monthly_rate:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Monthly payment ({payment:.2f}) does not exceed monthly interest "
+                f"({balance * monthly_rate:.2f}). The balance will never be paid off at "
+                f"this payment amount."
+            ),
+        )
+
+    today = date.today()
+    schedule: list[dict[str, Any]] = []
+    total_interest = 0.0
+    total_paid = 0.0
+    MAX_MONTHS = 360  # 30-year cap
+
+    for offset in range(1, MAX_MONTHS + 1):
+        interest = balance * monthly_rate
+        actual_payment = min(payment, balance + interest)
+        principal = actual_payment - interest
+        balance = balance - principal
+        if balance < 0.005:
+            balance = 0.0
+
+        total_interest += interest
+        total_paid += actual_payment
+
+        m_idx = (today.month - 1 + offset) % 12
+        y = today.year + (today.month - 1 + offset) // 12
+
+        schedule.append({
+            "month": offset,
+            "year": y,
+            "month_name": _MONTH_NAMES[m_idx],
+            "payment": round(actual_payment, 2),
+            "principal": round(principal, 2),
+            "interest": round(interest, 2),
+            "balance": round(balance, 2),
+        })
+
+        if balance == 0.0:
+            break
+
+    last = schedule[-1]
+    payoff_date = f"{last['year']}-{last['month_name']}"
+
+    return {
+        "remaining_balance": float(bill.remaining_balance),
+        "monthly_payment": payment,
+        "interest_rate": annual_rate,
+        "months_remaining": len(schedule),
+        "estimated_payoff_date": payoff_date,
+        "total_interest": round(total_interest, 2),
+        "total_paid": round(total_paid, 2),
+        "schedule": schedule,
+    }

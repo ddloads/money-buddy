@@ -50,6 +50,8 @@ class Bill(Base):
     category_id: Mapped[Optional[int]] = mapped_column(
         BigInteger, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    interest_rate: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
+    remaining_balance: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     receipt_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

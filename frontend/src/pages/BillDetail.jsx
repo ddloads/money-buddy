@@ -23,6 +23,7 @@ import {
   useUploadReceipt,
   useDeleteReceipt,
   usePaymentHistory,
+  usePayoffEstimate,
 } from '../hooks/useBills'
 
 function ConfirmDialog({ open, title, message, onConfirm, onCancel, confirmLabel = 'Delete', loading }) {
@@ -48,6 +49,140 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, confirmLabel
   )
 }
 
+function PayoffTab({ payoff, loading, error, format }) {
+  const [showFull, setShowFull] = useState(false)
+
+  if (loading) {
+    return (
+      <div className="card p-4 sm:p-6 space-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {[1,2,3,4,5,6].map((i) => (
+            <div key={i}>
+              <div className="skeleton h-3 w-20 mb-2" />
+              <div className="skeleton h-6 w-28" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="card p-4 sm:p-6">
+        <p className="text-sm text-red-500 dark:text-red-400">
+          {error?.response?.data?.detail || 'Could not load payoff estimate.'}
+        </p>
+      </div>
+    )
+  }
+
+  if (!payoff) return null
+
+  const displayMonths = showFull ? payoff.schedule : payoff.schedule.slice(0, 12)
+  const netSavings = payoff.total_paid - payoff.remaining_balance
+
+  return (
+    <div className="space-y-5">
+      {/* Key stats */}
+      <div className="card p-4 sm:p-6">
+        <h3 className="section-title mb-4">Payoff Summary</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
+          {[
+            { label: 'Estimated Payoff', value: payoff.estimated_payoff_date, highlight: true },
+            { label: 'Months Remaining', value: `${payoff.months_remaining} mo` },
+            { label: 'Monthly Payment', value: format(payoff.monthly_payment) },
+            { label: 'Remaining Balance', value: format(payoff.remaining_balance) },
+            { label: 'Total Interest', value: format(payoff.total_interest), warn: payoff.total_interest > 0 },
+            { label: 'Total Cost', value: format(payoff.total_paid) },
+          ].map(({ label, value, highlight, warn }) => (
+            <div key={label}>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-0.5">{label}</p>
+              <p className={`text-base font-semibold ${
+                highlight ? 'text-emerald-600 dark:text-emerald-400' :
+                warn ? 'text-amber-600 dark:text-amber-400' :
+                'text-gray-900 dark:text-gray-100'
+              }`}>
+                {value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {payoff.total_interest > 0 && (
+          <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800">
+            <p className="text-xs text-amber-700 dark:text-amber-400">
+              You'll pay <strong>{format(payoff.total_interest)}</strong> in interest on top of the <strong>{format(payoff.remaining_balance)}</strong> balance — <strong>{format(netSavings)}</strong> extra in total.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Amortization schedule */}
+      <div className="card p-4 sm:p-6">
+        <h3 className="section-title mb-4">
+          Amortization Schedule
+          {payoff.schedule.length > 12 && (
+            <span className="ml-2 text-xs font-normal text-gray-400">
+              ({payoff.schedule.length} months total)
+            </span>
+          )}
+        </h3>
+        <div className="overflow-x-auto -mx-2">
+          <table className="w-full text-sm min-w-[400px]">
+            <thead>
+              <tr className="text-xs text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-800">
+                <th className="text-left py-2 px-2 font-medium">Month</th>
+                <th className="text-right py-2 px-2 font-medium">Payment</th>
+                <th className="text-right py-2 px-2 font-medium">Principal</th>
+                <th className="text-right py-2 px-2 font-medium">Interest</th>
+                <th className="text-right py-2 px-2 font-medium">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayMonths.map((row) => (
+                <tr
+                  key={row.month}
+                  className={`border-b border-gray-50 dark:border-gray-900 ${
+                    row.balance === 0 ? 'bg-emerald-50/50 dark:bg-emerald-950/20' : ''
+                  }`}
+                >
+                  <td className="py-2 px-2 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                    {row.month_name} {row.year}
+                  </td>
+                  <td className="py-2 px-2 text-right font-medium text-gray-900 dark:text-gray-100">
+                    {format(row.payment)}
+                  </td>
+                  <td className="py-2 px-2 text-right text-emerald-700 dark:text-emerald-400">
+                    {format(row.principal)}
+                  </td>
+                  <td className="py-2 px-2 text-right text-amber-600 dark:text-amber-400">
+                    {format(row.interest)}
+                  </td>
+                  <td className={`py-2 px-2 text-right font-medium ${
+                    row.balance === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'
+                  }`}>
+                    {row.balance === 0 ? '✓ Paid off' : format(row.balance)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {payoff.schedule.length > 12 && (
+          <button
+            onClick={() => setShowFull((v) => !v)}
+            className="mt-3 text-sm text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
+          >
+            {showFull ? 'Show less' : `Show all ${payoff.schedule.length} months`}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function BillDetail({ isNew = false }) {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -59,6 +194,8 @@ export default function BillDetail({ isNew = false }) {
   const { format } = useCurrency()
   const { data: bill, isLoading } = useBill(isNew ? null : id)
   const { data: paymentHistory } = usePaymentHistory(isNew ? null : id)
+  const hasBalance = !isNew && bill?.remaining_balance > 0
+  const { data: payoff, isLoading: payoffLoading, error: payoffError } = usePayoffEstimate(hasBalance ? id : null)
   const createBill = useCreateBill()
   const updateBill = useUpdateBill(id)
   const deleteBill = useDeleteBill()
@@ -183,6 +320,7 @@ export default function BillDetail({ isNew = false }) {
             { key: 'details', label: 'Details' },
             { key: 'receipt', label: 'Receipt', badge: bill?.receipt_url ? '✓' : null },
             { key: 'history', label: 'History', badge: paymentHistory?.length > 0 ? paymentHistory.length : null },
+            ...(hasBalance ? [{ key: 'payoff', label: 'Payoff' }] : []),
           ].map(({ key, label, badge }) => (
             <button
               key={key}
@@ -349,6 +487,11 @@ export default function BillDetail({ isNew = false }) {
             </ol>
           )}
         </div>
+      )}
+
+      {/* Payoff estimate tab */}
+      {!isNew && activeTab === 'payoff' && (
+        <PayoffTab payoff={payoff} loading={payoffLoading} error={payoffError} format={format} />
       )}
 
       {/* Delete confirmation dialog */}

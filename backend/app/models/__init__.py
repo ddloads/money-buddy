@@ -3,5 +3,6 @@ from app.models.category import Category  # noqa: F401
 from app.models.bill import Bill  # noqa: F401
 from app.models.payment import Payment  # noqa: F401
 from app.models.template import BillTemplate  # noqa: F401
+from app.models.income import Income  # noqa: F401
 
-__all__ = ["User", "Category", "Bill", "Payment", "BillTemplate"]
+__all__ = ["User", "Category", "Bill", "Payment", "BillTemplate", "Income"]

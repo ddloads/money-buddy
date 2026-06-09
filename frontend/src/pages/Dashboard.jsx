@@ -4,9 +4,9 @@ import {
   DocumentTextIcon,
   CheckCircleIcon,
   ClockIcon,
-  CurrencyDollarIcon,
   ArrowRightIcon,
   PlusIcon,
+  BanknotesIcon,
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import StatCard from '../components/StatCard'
@@ -14,23 +14,33 @@ import UpcomingBills from '../components/UpcomingBills'
 import MonthlyChart from '../components/MonthlyChart'
 import CategoryChart from '../components/CategoryChart'
 import YearlyChart from '../components/YearlyChart'
-import { useDashboardSummary, useUpcomingBills, useMonthlyStats, useCategoryStats, useYearlyStats } from '../hooks/useDashboard'
+import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart'
+import { useDashboardSummary, useUpcomingBills, useMonthlyStats, useCategoryStats, useYearlyStats, useIncomeVsExpenses } from '../hooks/useDashboard'
 import { useAuthStore } from '../store/authStore'
 import { useCurrency } from '../hooks/useCurrency'
+
+const WEEKLY_DIVISOR = 4.333
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { format: formatCurrency } = useCurrency()
   const [showYearly, setShowYearly] = useState(false)
+  const [incomePeriod, setIncomePeriod] = useState('monthly')
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
   const { data: upcoming, isLoading: upcomingLoading } = useUpcomingBills(7)
   const { data: monthly, isLoading: monthlyLoading } = useMonthlyStats(6)
   const { data: categories, isLoading: categoriesLoading } = useCategoryStats()
   const { data: yearly, isLoading: yearlyLoading } = useYearlyStats()
+  const { data: incomeVsExpenses, isLoading: incomeVsExpensesLoading } = useIncomeVsExpenses(6)
 
   const firstName = user?.first_name || user?.name?.split(' ')[0] || 'there'
   const today = format(new Date(), 'EEEE, MMMM d')
+
+  const monthlyIncome = parseFloat(summary?.monthly_income ?? 0)
+  const monthlyBills = parseFloat(summary?.amount_due_this_month ?? 0)
+  const displayedIncome = incomePeriod === 'weekly' ? monthlyIncome / WEEKLY_DIVISOR : monthlyIncome
+  const displayedBills = incomePeriod === 'weekly' ? monthlyBills / WEEKLY_DIVISOR : monthlyBills
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -75,14 +85,60 @@ export default function Dashboard() {
           color={summary?.overdue_bills > 0 ? 'red' : 'yellow'}
           loading={summaryLoading}
         />
-        <StatCard
-          title="Due This Month"
-          value={summaryLoading ? '…' : formatCurrency(summary?.amount_due_this_month ?? 0)}
-          subtitle={`${formatCurrency(summary?.amount_paid_this_month ?? 0)} paid so far`}
-          Icon={CurrencyDollarIcon}
-          color="purple"
-          loading={summaryLoading}
-        />
+        {/* Income card with period toggle */}
+        {summaryLoading ? (
+          <div className="card p-5">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="skeleton h-3 w-24 mb-3" />
+                <div className="skeleton h-7 w-16 mb-2" />
+                <div className="skeleton h-3 w-20" />
+              </div>
+              <div className="skeleton h-10 w-10 rounded-lg" />
+            </div>
+          </div>
+        ) : (
+          <div className="card p-5 hover:shadow-card-hover transition-shadow duration-200 animate-fade-in">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Income</p>
+                  <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 text-xs">
+                    <button
+                      onClick={() => setIncomePeriod('monthly')}
+                      className={`px-1.5 py-0.5 font-medium transition-colors ${
+                        incomePeriod === 'monthly'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      Mo
+                    </button>
+                    <button
+                      onClick={() => setIncomePeriod('weekly')}
+                      className={`px-1.5 py-0.5 font-medium transition-colors ${
+                        incomePeriod === 'weekly'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      Wk
+                    </button>
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 truncate">
+                  {formatCurrency(displayedIncome)}
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  vs {formatCurrency(displayedBills)} in bills
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex-shrink-0">
+                <BanknotesIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main content grid */}
@@ -186,6 +242,26 @@ export default function Dashboard() {
           </div>
           <CategoryChart data={categories} loading={categoriesLoading} />
         </div>
+      </div>
+
+      {/* Income vs Expenses chart */}
+      <div className="card p-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
+          <div>
+            <h2 className="section-title">Income vs Expenses</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              Monthly income compared to your bill expenses — last 6 months
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/income')}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium flex-shrink-0"
+          >
+            Manage income
+            <ArrowRightIcon className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <IncomeVsExpensesChart data={incomeVsExpenses} loading={incomeVsExpensesLoading} />
       </div>
 
       {/* Year-over-year chart */}

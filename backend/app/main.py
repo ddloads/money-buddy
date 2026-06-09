@@ -76,6 +76,12 @@ async def lifespan(app: FastAPI):
                 "ADD COLUMN IF NOT EXISTS interest_rate NUMERIC(5,2)"
             )
         )
+        await conn.execute(
+            text(
+                "ALTER TABLE bills "
+                "ADD COLUMN IF NOT EXISTS remaining_balance NUMERIC(12,2)"
+            )
+        )
     logger.info("Database tables ready")
 
     yield

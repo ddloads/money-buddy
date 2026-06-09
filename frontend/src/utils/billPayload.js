@@ -6,6 +6,9 @@ export function normalizeBillFormData(data) {
   const interestRate = data.interest_rate === '' || data.interest_rate == null
     ? null
     : Number(data.interest_rate)
+  const remainingBalance = data.remaining_balance === '' || data.remaining_balance == null
+    ? null
+    : Number(data.remaining_balance)
 
   const normalized = {
     ...data,
@@ -14,6 +17,7 @@ export function normalizeBillFormData(data) {
     is_recurring: recurrence !== '',
     recurrence_interval: recurrence || null,
     interest_rate: Number.isNaN(interestRate) ? null : interestRate,
+    remaining_balance: Number.isNaN(remainingBalance) ? null : remainingBalance,
   }
 
   delete normalized.recurrence

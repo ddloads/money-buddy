@@ -63,6 +63,7 @@ export const billsAPI = {
   delete: (id) => api.delete(`/bills/${id}`),
   markPaid: (id, data) => api.post(`/bills/${id}/pay`, data),
   payments: (id) => api.get(`/bills/${id}/payments`),
+  payoffEstimate: (id) => api.get(`/bills/${id}/payoff`),
   export: () => api.get('/bills/export', { responseType: 'blob' }),
   uploadReceipt: (id, file) => {
     const formData = new FormData()

@@ -92,6 +92,17 @@ export const dashboardAPI = {
   monthlyStats: (months = 6) => api.get('/dashboard/monthly', { params: { months } }),
   categoryStats: () => api.get('/dashboard/categories'),
   yearlyStats: () => api.get('/dashboard/yearly'),
+  incomeVsExpenses: (months = 6) => api.get('/dashboard/income-vs-expenses', { params: { months } }),
+}
+
+// ─── Income ────────────────────────────────────────────────────────────────
+
+export const incomeAPI = {
+  list: () => api.get('/income'),
+  get: (id) => api.get(`/income/${id}`),
+  create: (data) => api.post('/income', data),
+  update: (id, data) => api.put(`/income/${id}`, data),
+  delete: (id) => api.delete(`/income/${id}`),
 }
 
 // ─── Templates ─────────────────────────────────────────────────────────────

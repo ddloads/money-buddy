@@ -28,6 +28,7 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
       category_id: '',
       autopay_enabled: false,
       recurrence: '',
+      interest_rate: '',
       notes: '',
       reminder_days: 3,
       ...defaultValues,
@@ -45,6 +46,7 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
         category_id: defaultValues.category_id || defaultValues.category?.id || '',
         autopay_enabled: Boolean(defaultValues.autopay_enabled),
         recurrence: defaultValues.recurrence_interval || defaultValues.recurrence || '',
+        interest_rate: defaultValues.interest_rate ?? '',
         notes: defaultValues.notes || '',
         reminder_days: defaultValues.reminder_days ?? 3,
       })
@@ -182,6 +184,33 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
             {...register('reminder_days', { min: 0, max: 30 })}
           />
         </div>
+      </div>
+
+      {/* Interest Rate */}
+      <div>
+        <label className="label" htmlFor="interest_rate">
+          Interest Rate{' '}
+          <span className="text-xs text-gray-400 font-normal">(optional — for credit cards / loans)</span>
+        </label>
+        <div className="relative">
+          <input
+            id="interest_rate"
+            type="number"
+            step="0.01"
+            min="0"
+            max="999"
+            className={`input pr-8 ${errors.interest_rate ? 'border-red-400 focus:ring-red-400' : ''}`}
+            placeholder="e.g. 19.99"
+            {...register('interest_rate', {
+              min: { value: 0, message: 'Must be ≥ 0' },
+              max: { value: 999, message: 'Must be ≤ 999' },
+            })}
+          />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+        </div>
+        {errors.interest_rate && (
+          <p className="mt-1 text-xs text-red-500">{errors.interest_rate.message}</p>
+        )}
       </div>
 
       {/* Notes */}

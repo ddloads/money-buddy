@@ -14,9 +14,11 @@ import UpcomingBills from '../components/UpcomingBills'
 import MonthlyChart from '../components/MonthlyChart'
 import CategoryChart from '../components/CategoryChart'
 import YearlyChart from '../components/YearlyChart'
-import { useDashboardSummary, useUpcomingBills, useMonthlyStats, useCategoryStats, useYearlyStats } from '../hooks/useDashboard'
+import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart'
+import { useDashboardSummary, useUpcomingBills, useMonthlyStats, useCategoryStats, useYearlyStats, useIncomeVsExpenses } from '../hooks/useDashboard'
 import { useAuthStore } from '../store/authStore'
 import { useCurrency } from '../hooks/useCurrency'
+import { BanknotesIcon } from '@heroicons/react/24/outline'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -28,6 +30,7 @@ export default function Dashboard() {
   const { data: monthly, isLoading: monthlyLoading } = useMonthlyStats(6)
   const { data: categories, isLoading: categoriesLoading } = useCategoryStats()
   const { data: yearly, isLoading: yearlyLoading } = useYearlyStats()
+  const { data: incomeVsExpenses, isLoading: incomeVsExpensesLoading } = useIncomeVsExpenses(6)
 
   const firstName = user?.first_name || user?.name?.split(' ')[0] || 'there'
   const today = format(new Date(), 'EEEE, MMMM d')
@@ -76,11 +79,11 @@ export default function Dashboard() {
           loading={summaryLoading}
         />
         <StatCard
-          title="Due This Month"
-          value={summaryLoading ? '…' : formatCurrency(summary?.amount_due_this_month ?? 0)}
-          subtitle={`${formatCurrency(summary?.amount_paid_this_month ?? 0)} paid so far`}
-          Icon={CurrencyDollarIcon}
-          color="purple"
+          title="Monthly Income"
+          value={summaryLoading ? '…' : formatCurrency(summary?.monthly_income ?? 0)}
+          subtitle={`vs ${formatCurrency(summary?.amount_due_this_month ?? 0)} in bills`}
+          Icon={BanknotesIcon}
+          color="blue"
           loading={summaryLoading}
         />
       </div>
@@ -186,6 +189,26 @@ export default function Dashboard() {
           </div>
           <CategoryChart data={categories} loading={categoriesLoading} />
         </div>
+      </div>
+
+      {/* Income vs Expenses chart */}
+      <div className="card p-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
+          <div>
+            <h2 className="section-title">Income vs Expenses</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+              Monthly income compared to your bill expenses — last 6 months
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/income')}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium flex-shrink-0"
+          >
+            Manage income
+            <ArrowRightIcon className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <IncomeVsExpensesChart data={incomeVsExpenses} loading={incomeVsExpensesLoading} />
       </div>
 
       {/* Year-over-year chart */}

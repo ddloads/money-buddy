@@ -1,6 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { dashboardAPI } from '../utils/api'
 
+export function useIncomeVsExpenses(months = 6) {
+  return useQuery({
+    queryKey: ['dashboard', 'income-vs-expenses', months],
+    queryFn: () => dashboardAPI.incomeVsExpenses(months).then((r) => r.data),
+    staleTime: 1000 * 60 * 3,
+  })
+}
+
 export function useCategoryStats() {
   return useQuery({
     queryKey: ['dashboard', 'categories'],

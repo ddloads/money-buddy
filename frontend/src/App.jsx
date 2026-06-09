@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import BillDetail from './pages/BillDetail'
 import Categories from './pages/Categories'
+import Income from './pages/Income'
 import Settings from './pages/Settings'
 import GoogleCallback from './pages/GoogleCallback'
 
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="bills" element={<Bills />} />
         <Route path="bills/new" element={<BillDetail isNew />} />
         <Route path="bills/:id" element={<BillDetail />} />
+        <Route path="income" element={<Income />} />
         <Route path="categories" element={<Categories />} />
         <Route path="settings" element={<Settings />} />
       </Route>

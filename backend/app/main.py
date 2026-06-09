@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, bills, categories, dashboard, templates
+from app.api import auth, bills, categories, dashboard, income, templates
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,12 @@ async def lifespan(app: FastAPI):
                 "ADD COLUMN IF NOT EXISTS monthly_budget NUMERIC(12,2)"
             )
         )
+        await conn.execute(
+            text(
+                "ALTER TABLE bills "
+                "ADD COLUMN IF NOT EXISTS interest_rate NUMERIC(5,2)"
+            )
+        )
     logger.info("Database tables ready")
 
     yield
@@ -111,6 +117,7 @@ def create_app() -> FastAPI:
     app.include_router(bills.router, prefix="/bills", tags=["Bills"])
     app.include_router(categories.router, prefix="/categories", tags=["Categories"])
     app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
+    app.include_router(income.router, prefix="/income", tags=["Income"])
     app.include_router(templates.router, prefix="/templates", tags=["Templates"])
 
     @app.get("/health", tags=["Health"])

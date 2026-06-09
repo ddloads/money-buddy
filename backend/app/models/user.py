@@ -33,6 +33,9 @@ class User(Base):
     categories: Mapped[List["Category"]] = relationship(  # noqa: F821
         "Category", back_populates="user", cascade="all, delete-orphan"
     )
+    incomes: Mapped[List["Income"]] = relationship(  # noqa: F821
+        "Income", back_populates="user", cascade="all, delete-orphan"
+    )
 
     @property
     def first_name(self) -> Optional[str]:

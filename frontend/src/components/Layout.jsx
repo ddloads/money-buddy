@@ -7,16 +7,18 @@ import {
   Cog6ToothIcon,
   Bars3Icon,
   XMarkIcon,
-  SunIcon,
-  MoonIcon,
   ArrowRightOnRectangleIcon,
-  PlusCircleIcon,
+  PlusIcon,
   BanknotesIcon,
+  WalletIcon,
+  ChartPieIcon,
+  FlagIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../store/authStore'
 import { useAuth } from '../hooks/useAuth'
+import PlaceholderTag from './PlaceholderTag'
 
-const navLinks = [
+const mainLinks = [
   { to: '/dashboard', label: 'Dashboard', Icon: HomeIcon },
   { to: '/bills', label: 'Bills', Icon: DocumentTextIcon },
   { to: '/income', label: 'Income', Icon: BanknotesIcon },
@@ -24,14 +26,19 @@ const navLinks = [
   { to: '/settings', label: 'Settings', Icon: Cog6ToothIcon },
 ]
 
+// Aspirational features — visible in the nav but not built yet
+const placeholderLinks = [
+  { label: 'Budget', Icon: WalletIcon },
+  { label: 'Reports', Icon: ChartPieIcon },
+  { label: 'Goals', Icon: FlagIcon },
+]
+
 function NavItem({ to, label, Icon, onClick }) {
   return (
     <NavLink
       to={to}
       onClick={onClick}
-      className={({ isActive }) =>
-        isActive ? 'nav-item-active' : 'nav-item'
-      }
+      className={({ isActive }) => (isActive ? 'nav-item-active' : 'nav-item')}
     >
       <Icon className="h-5 w-5 flex-shrink-0" />
       <span>{label}</span>
@@ -39,15 +46,33 @@ function NavItem({ to, label, Icon, onClick }) {
   )
 }
 
+function PlaceholderNavItem({ label, Icon }) {
+  return (
+    <button
+      type="button"
+      className="nav-item w-full cursor-default opacity-60 hover:bg-transparent hover:text-slate-400"
+      title="Placeholder — not functional yet"
+    >
+      <Icon className="h-5 w-5 flex-shrink-0" />
+      <span className="flex-1 text-left">{label}</span>
+      <PlaceholderTag />
+    </button>
+  )
+}
+
+function SectionLabel({ children }) {
+  return (
+    <p className="px-3 pt-4 pb-1.5 text-[11px] font-semibold text-slate-500 uppercase tracking-widest">
+      {children}
+    </p>
+  )
+}
+
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { user, darkMode, toggleDarkMode } = useAuthStore()
+  const { user } = useAuthStore()
   const { logout } = useAuth()
   const navigate = useNavigate()
-
-  const handleLogout = () => {
-    logout.mutate()
-  }
 
   const initials = user
     ? `${(user.first_name || user.name || 'U')[0]}`.toUpperCase()
@@ -57,111 +82,96 @@ export default function Layout() {
     ? `${user.first_name} ${user.last_name || ''}`.trim()
     : user?.name || 'User'
 
+  const closeSidebar = () => setSidebarOpen(false)
+
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
+    <div className="flex h-screen bg-midnight-950 overflow-hidden">
       {/* ── Sidebar overlay (mobile) ─────────────────────────────────────── */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-20 bg-black/50 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-20 bg-black/70 backdrop-blur-sm lg:hidden"
+          onClick={closeSidebar}
         />
       )}
 
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-30 w-64 flex flex-col
-          bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800
+          fixed inset-y-0 left-0 z-30 w-72 flex flex-col
+          bg-midnight-900 border-r border-white/[0.06]
           transform transition-transform duration-300 ease-in-out
           lg:relative lg:translate-x-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* Logo */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Money Buddy" className="h-10 w-10 flex-shrink-0" />
+        {/* Brand */}
+        <div className="flex items-center justify-between px-5 py-5">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-2xl bg-emerald-500/30 blur-lg" />
+              <img src="/logo.svg" alt="Money Buddy" className="relative h-10 w-10" />
+            </div>
             <div>
-              <h1 className="font-bold text-gray-900 dark:text-gray-100 leading-none">
-                Money Buddy
-              </h1>
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                Smart Bill Manager
+              <h1 className="font-bold text-white leading-tight">Money Buddy</h1>
+              <p className="text-[11px] font-medium text-emerald-400/90 tracking-wide">
+                SMART BILL MANAGER
               </p>
             </div>
           </div>
           <button
-            className="lg:hidden p-1 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-white/[0.06]"
+            onClick={closeSidebar}
           >
             <XMarkIcon className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Nav links */}
-        <nav className="flex-1 sidebar-scroll p-4 space-y-1">
-          {navLinks.map(({ to, label, Icon }) => (
-            <NavItem
-              key={to}
-              to={to}
-              label={label}
-              Icon={Icon}
-              onClick={() => setSidebarOpen(false)}
-            />
-          ))}
-
-          <div className="pt-3 pb-1">
-            <p className="px-3 text-xs font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-wider">
-              Quick Actions
-            </p>
-          </div>
+        {/* Quick add */}
+        <div className="px-4 pb-2">
           <button
-            onClick={() => {
-              navigate('/bills/new')
-              setSidebarOpen(false)
-            }}
-            className="nav-item w-full text-left"
+            onClick={() => { navigate('/bills/new'); closeSidebar() }}
+            className="btn-primary w-full py-2.5"
           >
-            <PlusCircleIcon className="h-5 w-5 flex-shrink-0 text-emerald-600" />
-            <span>Add New Bill</span>
+            <PlusIcon className="h-4 w-4" />
+            Add New Bill
           </button>
+        </div>
+
+        {/* Nav links */}
+        <nav className="flex-1 sidebar-scroll px-4 pb-4">
+          <SectionLabel>Menu</SectionLabel>
+          <div className="space-y-1">
+            {mainLinks.map(({ to, label, Icon }) => (
+              <NavItem key={to} to={to} label={label} Icon={Icon} onClick={closeSidebar} />
+            ))}
+          </div>
+
+          <SectionLabel>Coming Soon</SectionLabel>
+          <div className="space-y-1">
+            {placeholderLinks.map(({ label, Icon }) => (
+              <PlaceholderNavItem key={label} label={label} Icon={Icon} />
+            ))}
+          </div>
         </nav>
 
         {/* Bottom section */}
-        <div className="p-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
-          {/* Dark mode toggle */}
-          <button
-            onClick={toggleDarkMode}
-            className="nav-item w-full"
-          >
-            {darkMode ? (
-              <SunIcon className="h-5 w-5 text-yellow-500" />
-            ) : (
-              <MoonIcon className="h-5 w-5 text-gray-500" />
-            )}
-            <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
-          </button>
-
-          {/* User info */}
-          <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-800">
-            <div className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+        <div className="p-4 border-t border-white/[0.06] space-y-2">
+          {/* User card */}
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-                {displayName}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {user?.email}
-              </p>
+              <p className="text-sm font-medium text-slate-100 truncate">{displayName}</p>
+              <p className="text-xs text-slate-500 truncate">{user?.email}</p>
             </div>
           </div>
 
           {/* Logout */}
           <button
-            onClick={handleLogout}
+            onClick={() => logout.mutate()}
             disabled={logout.isPending}
-            className="nav-item w-full text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50"
+            className="nav-item w-full text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
           >
             <ArrowRightOnRectangleIcon className="h-5 w-5 flex-shrink-0" />
             <span>{logout.isPending ? 'Signing out…' : 'Sign Out'}</span>
@@ -172,48 +182,45 @@ export default function Layout() {
       {/* ── Main content ─────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar (mobile) */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-midnight-900/90 backdrop-blur border-b border-white/[0.06] flex-shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]"
           >
             <Bars3Icon className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-2">
             <img src="/logo.svg" alt="" className="h-7 w-7" />
-            <span className="font-bold text-gray-900 dark:text-gray-100">Money Buddy</span>
+            <span className="font-bold text-white">Money Buddy</span>
           </div>
           <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400"
+            onClick={() => navigate('/bills/new')}
+            className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-500/10"
+            title="Add new bill"
           >
-            {darkMode ? (
-              <SunIcon className="h-5 w-5 text-yellow-500" />
-            ) : (
-              <MoonIcon className="h-5 w-5" />
-            )}
+            <PlusIcon className="h-5 w-5" />
           </button>
         </header>
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-8">
             <Outlet />
           </div>
         </main>
 
         {/* Bottom nav (mobile) */}
-        <nav className="lg:hidden flex-shrink-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+        <nav className="lg:hidden flex-shrink-0 bg-midnight-900/95 backdrop-blur border-t border-white/[0.06]">
           <div className="flex">
-            {navLinks.map(({ to, label, Icon }) => (
+            {mainLinks.map(({ to, label, Icon }) => (
               <NavLink
                 key={to}
                 to={to}
                 className={({ isActive }) =>
-                  `flex-1 flex flex-col items-center gap-1 py-2 text-xs font-medium transition-colors duration-200 ${
+                  `flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors duration-200 ${
                     isActive
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                      ? 'text-emerald-400'
+                      : 'text-slate-500 hover:text-slate-300'
                   }`
                 }
               >

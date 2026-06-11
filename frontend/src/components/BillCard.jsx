@@ -3,6 +3,7 @@ import { CheckCircleIcon, ClockIcon, ExclamationCircleIcon, SparklesIcon } from 
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 import { useNavigate } from 'react-router-dom'
 import CategoryBadge from './CategoryBadge'
+import Spinner from './Spinner'
 import { formatBillDate, toCalendarDate } from '../utils/billDates'
 import { useCurrency } from '../hooks/useCurrency'
 
@@ -49,20 +50,20 @@ export default function BillCard({ bill, onMarkPaid, isMarkingPaid }) {
   return (
     <div
       onClick={handleCardClick}
-      className="card p-4 cursor-pointer hover:shadow-card-hover transition-all duration-200 animate-fade-in group"
+      className="card-interactive p-4 cursor-pointer animate-fade-in group"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         {/* Left: info */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+            <h3 className="font-semibold text-slate-100 truncate group-hover:text-emerald-300 transition-colors">
               {bill.name}
             </h3>
             {bill.is_recurring && (
-              <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0">↻ Recurring</span>
+              <span className="text-xs text-slate-500 flex-shrink-0">↻ Recurring</span>
             )}
             {bill.autopay_enabled && (
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 flex-shrink-0">
+              <span className="text-xs text-emerald-400 flex items-center gap-1 flex-shrink-0">
                 <SparklesIcon className="h-3 w-3" />
                 Auto Pay
               </span>
@@ -72,21 +73,19 @@ export default function BillCard({ bill, onMarkPaid, isMarkingPaid }) {
           <div className="flex items-center gap-2 flex-wrap">
             {bill.category && <CategoryBadge category={bill.category} />}
             <span className={colorMap[status.color]}>
-              <status.Icon className="h-3 w-3 mr-1 inline" />
+              <status.Icon className="h-3 w-3" />
               {status.label}
             </span>
           </div>
 
           {bill.notes && (
-            <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 truncate">
-              {bill.notes}
-            </p>
+            <p className="mt-1.5 text-xs text-slate-500 truncate">{bill.notes}</p>
           )}
         </div>
 
         {/* Right: amount + action */}
         <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-start flex-shrink-0 w-full sm:w-auto">
-          <span className={`text-base sm:text-lg font-bold ${bill.is_paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-gray-100'}`}>
+          <span className={`text-base sm:text-lg font-bold ${bill.is_paid ? 'text-emerald-400' : 'text-white'}`}>
             {format(bill.amount)}
           </span>
 
@@ -99,10 +98,7 @@ export default function BillCard({ bill, onMarkPaid, isMarkingPaid }) {
             >
               {isMarkingPaid ? (
                 <span className="flex items-center gap-1">
-                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
+                  <Spinner className="h-3 w-3" />
                   Paying…
                 </span>
               ) : (
@@ -113,7 +109,7 @@ export default function BillCard({ bill, onMarkPaid, isMarkingPaid }) {
               )}
             </button>
           ) : (
-            <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+            <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
               <CheckCircleSolid className="h-4 w-4" />
               Paid
             </span>

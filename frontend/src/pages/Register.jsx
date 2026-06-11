@@ -3,6 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '../hooks/useAuth'
+import PlaceholderTag from '../components/PlaceholderTag'
+import Spinner from '../components/Spinner'
+import GoogleIcon from '../components/GoogleIcon'
 
 export default function Register() {
   const { register: registerMutation, googleAuthEnabled, googleAuthStatus } = useAuth()
@@ -24,42 +27,37 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md">
+    <div className="relative min-h-screen bg-midnight-950 flex items-center justify-center px-4 py-8 overflow-hidden">
+      {/* Background glow accents */}
+      <div className="pointer-events-none absolute -top-40 -right-40 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl" />
+
+      <div className="relative w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-3">
-            <img src="/logo.svg" alt="Money Buddy" className="h-20 w-20 sm:h-24 sm:w-24 drop-shadow-lg" />
+          <div className="relative inline-flex justify-center mb-4">
+            <div className="absolute inset-0 rounded-full bg-emerald-500/25 blur-2xl" />
+            <img src="/logo.svg" alt="Money Buddy" className="relative h-20 w-20 sm:h-24 sm:w-24" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            Money Buddy
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Take control of your bills
-          </p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Money Buddy</h1>
+          <p className="text-slate-400 mt-1">Take control of your bills</p>
         </div>
 
         {/* Card */}
         <div className="card p-5 sm:p-8 animate-slide-up">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
-            Create your account
-          </h2>
+          <h2 className="text-xl font-semibold text-white mb-6">Create your account</h2>
 
           {searchParams.get('error') === 'google_oauth_unavailable' && (
-            <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg">
-              <p className="text-sm text-amber-700 dark:text-amber-300">
-                Google sign-up is not configured right now. Please create an account with your email and password.
-              </p>
+            <div className="alert-warning mb-4">
+              Google sign-up is not configured right now. Please create an account with your email and password.
             </div>
           )}
 
           {registerMutation.isError && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-red-700 dark:text-red-400">
-                {registerMutation.error?.response?.data?.detail ||
-                  registerMutation.error?.response?.data?.message ||
-                  'Registration failed. Please try again.'}
-              </p>
+            <div className="alert-error mb-4">
+              {registerMutation.error?.response?.data?.detail ||
+                registerMutation.error?.response?.data?.message ||
+                'Registration failed. Please try again.'}
             </div>
           )}
 
@@ -72,13 +70,11 @@ export default function Register() {
                   id="first_name"
                   type="text"
                   autoComplete="given-name"
-                  className={`input ${errors.first_name ? 'border-red-400' : ''}`}
+                  className={`input ${errors.first_name ? 'input-error' : ''}`}
                   placeholder="Jane"
                   {...register('first_name', { required: 'Required' })}
                 />
-                {errors.first_name && (
-                  <p className="mt-1 text-xs text-red-500">{errors.first_name.message}</p>
-                )}
+                {errors.first_name && <p className="field-error">{errors.first_name.message}</p>}
               </div>
               <div>
                 <label className="label" htmlFor="last_name">Last name</label>
@@ -86,13 +82,11 @@ export default function Register() {
                   id="last_name"
                   type="text"
                   autoComplete="family-name"
-                  className={`input ${errors.last_name ? 'border-red-400' : ''}`}
+                  className={`input ${errors.last_name ? 'input-error' : ''}`}
                   placeholder="Doe"
                   {...register('last_name', { required: 'Required' })}
                 />
-                {errors.last_name && (
-                  <p className="mt-1 text-xs text-red-500">{errors.last_name.message}</p>
-                )}
+                {errors.last_name && <p className="field-error">{errors.last_name.message}</p>}
               </div>
             </div>
 
@@ -103,7 +97,7 @@ export default function Register() {
                 id="email"
                 type="email"
                 autoComplete="email"
-                className={`input ${errors.email ? 'border-red-400' : ''}`}
+                className={`input ${errors.email ? 'input-error' : ''}`}
                 placeholder="you@example.com"
                 {...register('email', {
                   required: 'Email is required',
@@ -113,9 +107,7 @@ export default function Register() {
                   },
                 })}
               />
-              {errors.email && (
-                <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="field-error">{errors.email.message}</p>}
             </div>
 
             {/* Password */}
@@ -126,7 +118,7 @@ export default function Register() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  className={`input pr-10 ${errors.password ? 'border-red-400' : ''}`}
+                  className={`input pr-10 ${errors.password ? 'input-error' : ''}`}
                   placeholder="Minimum 8 characters"
                   {...register('password', {
                     required: 'Password is required',
@@ -136,14 +128,12 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                 >
                   {showPassword ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
-              )}
+              {errors.password && <p className="field-error">{errors.password.message}</p>}
             </div>
 
             {/* Confirm password */}
@@ -154,7 +144,7 @@ export default function Register() {
                   id="confirm_password"
                   type={showConfirm ? 'text' : 'password'}
                   autoComplete="new-password"
-                  className={`input pr-10 ${errors.confirm_password ? 'border-red-400' : ''}`}
+                  className={`input pr-10 ${errors.confirm_password ? 'input-error' : ''}`}
                   placeholder="Repeat your password"
                   {...register('confirm_password', {
                     required: 'Please confirm your password',
@@ -164,14 +154,12 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                 >
                   {showConfirm ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
                 </button>
               </div>
-              {errors.confirm_password && (
-                <p className="mt-1 text-xs text-red-500">{errors.confirm_password.message}</p>
-              )}
+              {errors.confirm_password && <p className="field-error">{errors.confirm_password.message}</p>}
             </div>
 
             {/* Terms */}
@@ -179,23 +167,21 @@ export default function Register() {
               <input
                 id="terms"
                 type="checkbox"
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                className="mt-0.5 h-4 w-4 rounded border-white/20 bg-midnight-800 text-emerald-500 focus:ring-emerald-500"
                 {...register('terms', { required: 'You must accept the terms' })}
               />
-              <label htmlFor="terms" className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+              <label htmlFor="terms" className="text-xs text-slate-400 leading-relaxed">
                 I agree to the{' '}
-                <span className="text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer">
-                  Terms of Service
+                <span className="inline-flex items-center gap-1 text-emerald-400" title="Placeholder — not functional yet">
+                  Terms of Service <PlaceholderTag />
                 </span>{' '}
                 and{' '}
-                <span className="text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer">
-                  Privacy Policy
+                <span className="inline-flex items-center gap-1 text-emerald-400" title="Placeholder — not functional yet">
+                  Privacy Policy <PlaceholderTag />
                 </span>
               </label>
             </div>
-            {errors.terms && (
-              <p className="text-xs text-red-500 -mt-2">{errors.terms.message}</p>
-            )}
+            {errors.terms && <p className="field-error -mt-2">{errors.terms.message}</p>}
 
             {/* Submit */}
             <button
@@ -205,10 +191,7 @@ export default function Register() {
             >
               {registerMutation.isPending ? (
                 <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
+                  <Spinner />
                   Creating account…
                 </span>
               ) : (
@@ -222,10 +205,10 @@ export default function Register() {
               {/* Divider */}
               <div className="relative my-5">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+                  <div className="w-full border-t border-white/10" />
                 </div>
-                <div className="relative flex justify-center text-xs text-gray-400">
-                  <span className="bg-white dark:bg-gray-900 px-3">or</span>
+                <div className="relative flex justify-center text-xs text-slate-500">
+                  <span className="bg-midnight-900 px-3">or</span>
                 </div>
               </div>
 
@@ -234,25 +217,17 @@ export default function Register() {
                 type="button"
                 onClick={() => { window.location.href = '/api/auth/google' }}
                 disabled={googleAuthStatus.isLoading}
-                className="btn-secondary w-full py-2.5 flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="btn-secondary w-full py-2.5"
               >
-                <svg className="h-5 w-5" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                </svg>
+                <GoogleIcon />
                 Sign up with Google
               </button>
             </>
           )}
 
-          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-5">
+          <p className="text-center text-sm text-slate-400 mt-5">
             Already have an account?{' '}
-            <Link
-              to="/login"
-              className="text-emerald-600 dark:text-emerald-400 font-medium hover:underline"
-            >
+            <Link to="/login" className="text-emerald-400 font-medium hover:underline">
               Sign in
             </Link>
           </p>

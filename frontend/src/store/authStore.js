@@ -6,7 +6,6 @@ export const useAuthStore = create(
     (set, get) => ({
       user: null,
       token: null,
-      darkMode: true,
 
       // Set auth data after login/register
       setAuth: (user, token) => {
@@ -30,34 +29,10 @@ export const useAuthStore = create(
         set({ user: null, token: null })
       },
 
-      // Dark mode toggle
-      toggleDarkMode: () => {
-        const next = !get().darkMode
-        set({ darkMode: next })
-        if (next) {
-          document.documentElement.classList.add('dark')
-        } else {
-          document.documentElement.classList.remove('dark')
-        }
-      },
-
-      setDarkMode: (value) => {
-        set({ darkMode: value })
-        if (value) {
-          document.documentElement.classList.add('dark')
-        } else {
-          document.documentElement.classList.remove('dark')
-        }
-      },
-
-      // Apply theme on app init (called in App.jsx)
+      // The app is dark-only — make sure the class is always present
+      // (called in App.jsx on mount)
       initTheme: () => {
-        const { darkMode } = get()
-        if (darkMode) {
-          document.documentElement.classList.add('dark')
-        } else {
-          document.documentElement.classList.remove('dark')
-        }
+        document.documentElement.classList.add('dark')
       },
     }),
     {
@@ -65,7 +40,6 @@ export const useAuthStore = create(
       partialize: (state) => ({
         user: state.user,
         token: state.token,
-        darkMode: state.darkMode,
       }),
     }
   )

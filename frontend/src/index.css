@@ -2,114 +2,169 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  * {
-    @apply border-gray-200;
-  }
+/* ────────────────────────────────────────────────────────────────────────────
+   Money Buddy design system — dark-only theme.
+   Surfaces use the custom `midnight` navy scale; emerald is the brand accent.
+   ──────────────────────────────────────────────────────────────────────────── */
 
+@layer base {
   html {
     @apply scroll-smooth;
+    color-scheme: dark; /* native inputs (date pickers, checkboxes) render dark */
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
-    @apply dark:bg-gray-950 dark:text-gray-100;
+    @apply bg-midnight-950 text-slate-200 font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-emerald-500/30 text-white;
   }
 }
 
 @layer components {
+  /* ── Buttons ─────────────────────────────────────────────────────────── */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-medium text-sm
+      transition-all duration-200 focus:outline-none focus-visible:ring-2
+      focus-visible:ring-emerald-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-midnight-950
+      disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98];
   }
 
   .btn-primary {
-    @apply btn bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500 active:bg-emerald-800;
-    @apply dark:bg-emerald-500 dark:hover:bg-emerald-600;
+    @apply btn text-white bg-gradient-to-r from-emerald-500 to-teal-500
+      hover:from-emerald-400 hover:to-teal-400 shadow-glow;
   }
 
   .btn-secondary {
-    @apply btn bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-400;
-    @apply dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700;
+    @apply btn bg-white/[0.06] text-slate-200 border border-white/10
+      hover:bg-white/10 hover:border-white/20;
   }
 
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+    @apply btn bg-rose-600 text-white hover:bg-rose-500;
   }
 
   .btn-ghost {
-    @apply btn bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-400;
-    @apply dark:text-gray-400 dark:hover:bg-gray-800;
+    @apply btn bg-transparent text-slate-400 hover:bg-white/[0.06] hover:text-slate-200;
   }
 
   .btn-outline {
-    @apply btn border border-emerald-600 text-emerald-600 hover:bg-emerald-50 focus:ring-emerald-500;
-    @apply dark:border-emerald-500 dark:text-emerald-400 dark:hover:bg-emerald-950;
+    @apply btn border border-emerald-500/40 text-emerald-400
+      hover:bg-emerald-500/10 hover:border-emerald-400/60;
   }
 
+  /* ── Surfaces ────────────────────────────────────────────────────────── */
   .card {
-    @apply bg-white rounded-xl shadow-card border border-gray-100;
-    @apply dark:bg-gray-900 dark:border-gray-800;
+    @apply bg-midnight-900/90 rounded-2xl border border-white/[0.06] shadow-card;
   }
 
+  .card-interactive {
+    @apply card transition-all duration-200 hover:border-white/[0.12] hover:shadow-card-hover;
+  }
+
+  .modal-overlay {
+    @apply absolute inset-0 bg-black/70 backdrop-blur-sm;
+  }
+
+  /* ── Forms ───────────────────────────────────────────────────────────── */
   .input {
-    @apply w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-gray-900 text-sm;
-    @apply placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent;
-    @apply dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500;
-    @apply transition-colors duration-200;
+    @apply w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-midnight-800/80
+      text-slate-100 text-sm placeholder:text-slate-500
+      focus:outline-none focus:ring-2 focus:ring-emerald-500/60 focus:border-transparent
+      transition-colors duration-200;
+  }
+
+  .input-error {
+    @apply border-rose-500/60 focus:ring-rose-500/60;
   }
 
   .label {
-    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1;
+    @apply block text-sm font-medium text-slate-300 mb-1.5;
   }
 
+  .field-error {
+    @apply mt-1 text-xs text-rose-400;
+  }
+
+  /* ── Badges ──────────────────────────────────────────────────────────── */
   .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
 
   .badge-green {
-    @apply badge bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200;
+    @apply badge bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-500/30;
   }
 
   .badge-red {
-    @apply badge bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+    @apply badge bg-rose-500/15 text-rose-300 ring-1 ring-inset ring-rose-500/30;
   }
 
   .badge-yellow {
-    @apply badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+    @apply badge bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-500/30;
+  }
+
+  .badge-blue {
+    @apply badge bg-blue-500/15 text-blue-300 ring-1 ring-inset ring-blue-500/30;
   }
 
   .badge-gray {
-    @apply badge bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300;
+    @apply badge bg-white/[0.07] text-slate-300 ring-1 ring-inset ring-white/10;
   }
 
+  /* Tiny pill marking placeholder controls that have no logic behind them */
+  .ph-tag {
+    @apply inline-flex items-center px-1.5 py-px rounded-md text-[10px] font-semibold
+      uppercase tracking-wide bg-violet-500/15 text-violet-300 ring-1 ring-inset ring-violet-500/30;
+  }
+
+  /* ── Navigation ──────────────────────────────────────────────────────── */
   .nav-item {
-    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200;
-    @apply text-gray-600 hover:bg-gray-100 hover:text-gray-900;
-    @apply dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100;
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+      transition-all duration-200 text-slate-400 hover:bg-white/[0.06] hover:text-slate-100;
   }
 
   .nav-item-active {
-    @apply nav-item bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800;
-    @apply dark:bg-emerald-950 dark:text-emerald-400 dark:hover:bg-emerald-900 dark:hover:text-emerald-300;
+    @apply nav-item bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/15 hover:text-emerald-200
+      ring-1 ring-inset ring-emerald-500/20;
   }
 
+  /* ── Typography ──────────────────────────────────────────────────────── */
   .page-header {
-    @apply text-2xl font-bold text-gray-900 dark:text-gray-100;
+    @apply text-2xl font-bold text-white tracking-tight;
   }
 
   .section-title {
-    @apply text-lg font-semibold text-gray-800 dark:text-gray-200;
+    @apply text-base font-semibold text-slate-100;
+  }
+
+  .text-muted {
+    @apply text-sm text-slate-400;
+  }
+
+  /* ── Alerts ──────────────────────────────────────────────────────────── */
+  .alert-error {
+    @apply p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-sm text-rose-300;
+  }
+
+  .alert-success {
+    @apply p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-sm text-emerald-300;
+  }
+
+  .alert-warning {
+    @apply p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-sm text-amber-300;
   }
 }
 
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #10b981 transparent;
+    scrollbar-color: rgba(16, 185, 129, 0.4) transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
     width: 4px;
+    height: 4px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
@@ -117,7 +172,7 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: #10b981;
+    background-color: rgba(16, 185, 129, 0.4);
     border-radius: 9999px;
   }
 
@@ -126,7 +181,7 @@
   }
 }
 
-/* Custom scrollbar for sidebar */
+/* Sidebar scroll area */
 .sidebar-scroll {
   overflow-y: auto;
   scrollbar-width: thin;
@@ -140,13 +195,8 @@
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background: linear-gradient(90deg, #131c30 25%, #1c2944 50%, #131c30 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-  border-radius: 4px;
-}
-
-.dark .skeleton {
-  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
-  background-size: 200% 100%;
+  border-radius: 6px;
 }

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, PencilIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '../hooks/useCategories'
 import { useCurrency } from '../hooks/useCurrency'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const PRESET_COLORS = [
   '#ef4444', '#f97316', '#f59e0b', '#eab308',
@@ -31,21 +32,21 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isLoading }) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="label">Name <span className="text-red-500">*</span></label>
+          <label className="label">Name <span className="text-rose-400">*</span></label>
           <input
             type="text"
-            className={`input ${errors.name ? 'border-red-400' : ''}`}
+            className={`input ${errors.name ? 'input-error' : ''}`}
             placeholder="e.g. Utilities"
             {...register('name', { required: 'Name is required' })}
           />
-          {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
+          {errors.name && <p className="field-error">{errors.name.message}</p>}
         </div>
         <div>
           <label className="label">Color</label>
           <div className="flex items-center gap-2">
             <input
               type="color"
-              className="h-9 w-14 rounded-md border border-gray-300 dark:border-gray-700 cursor-pointer p-0.5 bg-white dark:bg-gray-800"
+              className="h-10 w-14 rounded-lg border border-white/10 cursor-pointer p-0.5 bg-midnight-800"
               {...register('color')}
             />
             <input
@@ -68,7 +69,7 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isLoading }) {
               type="button"
               onClick={() => setValue('color', c)}
               className={`h-6 w-6 rounded-full transition-transform hover:scale-110 ${
-                selectedColor === c ? 'ring-2 ring-offset-2 ring-gray-400 scale-110' : ''
+                selectedColor === c ? 'ring-2 ring-offset-2 ring-offset-midnight-900 ring-white/60 scale-110' : ''
               }`}
               style={{ backgroundColor: c }}
               title={c}
@@ -88,7 +89,7 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isLoading }) {
             placeholder="📄"
             {...register('icon')}
           />
-          <span className="text-xs text-gray-400">or pick one:</span>
+          <span className="text-xs text-slate-500">or pick one:</span>
         </div>
         <div className="flex flex-wrap gap-1">
           {DEFAULT_ICONS.map((icon) => (
@@ -96,8 +97,8 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isLoading }) {
               key={icon}
               type="button"
               onClick={() => setValue('icon', icon)}
-              className={`h-9 w-9 rounded-lg text-lg transition-all hover:bg-gray-100 dark:hover:bg-gray-800 ${
-                selectedIcon === icon ? 'bg-emerald-50 dark:bg-emerald-950 ring-2 ring-emerald-500' : ''
+              className={`h-9 w-9 rounded-lg text-lg transition-all hover:bg-white/[0.07] ${
+                selectedIcon === icon ? 'bg-emerald-500/10 ring-2 ring-emerald-500' : ''
               }`}
             >
               {icon}
@@ -119,7 +120,7 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isLoading }) {
             setValueAs: (v) => (v === '' || v === null ? null : parseFloat(v)),
           })}
         />
-        <p className="mt-1 text-xs text-gray-400">Leave blank for no budget limit.</p>
+        <p className="mt-1 text-xs text-slate-500">Leave blank for no budget limit.</p>
       </div>
 
       <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1">
@@ -131,25 +132,6 @@ function CategoryForm({ defaultValues, onSubmit, onCancel, isLoading }) {
         </button>
       </div>
     </form>
-  )
-}
-
-function ConfirmDialog({ open, title, message, onConfirm, onCancel, loading }) {
-  if (!open) return null
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
-      <div className="card p-6 w-full max-w-sm z-10 animate-slide-up">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">{message}</p>
-        <div className="flex gap-3">
-          <button onClick={onCancel} className="btn-secondary flex-1">Cancel</button>
-          <button onClick={onConfirm} disabled={loading} className="btn-danger flex-1">
-            {loading ? 'Deleting…' : 'Delete'}
-          </button>
-        </div>
-      </div>
-    </div>
   )
 }
 
@@ -185,7 +167,12 @@ export default function Categories() {
   return (
     <div className="space-y-5 animate-fade-in max-w-2xl">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="page-header">Categories</h1>
+        <div>
+          <h1 className="page-header">Categories</h1>
+          <p className="text-sm text-slate-400 mt-0.5">
+            Group your bills so you can see where the money goes.
+          </p>
+        </div>
         <button
           onClick={() => { setShowForm(true); setEditCategory(null) }}
           className="btn-primary w-full sm:w-auto"
@@ -205,10 +192,8 @@ export default function Categories() {
             </button>
           </div>
           {createCat.isError && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-red-700 dark:text-red-400">
-                {createCat.error?.response?.data?.detail || 'Failed to create category.'}
-              </p>
+            <div className="alert-error mb-4">
+              {createCat.error?.response?.data?.detail || 'Failed to create category.'}
             </div>
           )}
           <CategoryForm
@@ -224,7 +209,7 @@ export default function Categories() {
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="card p-4 flex items-center gap-4">
-              <div className="skeleton h-10 w-10 rounded-lg" />
+              <div className="skeleton h-10 w-10 rounded-xl" />
               <div className="flex-1">
                 <div className="skeleton h-4 w-32 mb-1" />
                 <div className="skeleton h-3 w-20" />
@@ -234,13 +219,13 @@ export default function Categories() {
         </div>
       ) : isError ? (
         <div className="card p-8 text-center">
-          <p className="text-gray-700 dark:text-gray-300">Failed to load categories.</p>
+          <p className="text-slate-300">Failed to load categories.</p>
         </div>
       ) : !categories || categories.length === 0 ? (
         <div className="card p-12 text-center">
           <div className="text-5xl mb-3">🏷️</div>
-          <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">No categories yet</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <p className="text-lg font-semibold text-slate-100 mb-1">No categories yet</p>
+          <p className="text-sm text-slate-400 mb-4">
             Organize your bills by creating custom categories.
           </p>
           <button onClick={() => setShowForm(true)} className="btn-primary">
@@ -268,11 +253,11 @@ export default function Categories() {
                   />
                 </div>
               ) : (
-                <div className="card p-4 flex items-center gap-4 group hover:shadow-card-hover transition-shadow">
+                <div className="card-interactive p-4 flex items-center gap-4 group">
                   {/* Color + icon */}
                   <div
                     className="h-11 w-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 transition-transform group-hover:scale-105"
-                    style={{ backgroundColor: `${cat.color}20`, color: cat.color }}
+                    style={{ backgroundColor: `${cat.color}26`, color: cat.color }}
                   >
                     {cat.icon || '📁'}
                   </div>
@@ -280,7 +265,7 @@ export default function Categories() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-gray-800 dark:text-gray-200">{cat.name}</span>
+                      <span className="font-semibold text-slate-100">{cat.name}</span>
                       <span
                         className="inline-block h-3 w-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: cat.color }}
@@ -288,10 +273,10 @@ export default function Categories() {
                     </div>
                     {cat.monthly_budget ? (
                       <div className="mt-1">
-                        <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 mb-0.5">
+                        <div className="flex justify-between text-xs text-slate-500 mb-0.5">
                           <span>Budget: {format(cat.monthly_budget)}</span>
                         </div>
-                        <div className="h-1.5 w-32 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-1.5 w-32 bg-white/[0.06] rounded-full overflow-hidden">
                           <div
                             className="h-full rounded-full transition-all"
                             style={{
@@ -302,7 +287,7 @@ export default function Categories() {
                         </div>
                       </div>
                     ) : cat.bill_count !== undefined ? (
-                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                      <p className="text-xs text-slate-500">
                         {cat.bill_count} bill{cat.bill_count !== 1 ? 's' : ''}
                       </p>
                     ) : null}
@@ -312,14 +297,14 @@ export default function Categories() {
                   <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => { setEditCategory(cat); setShowForm(false) }}
-                      className="btn-ghost p-2 text-gray-500"
+                      className="btn-ghost p-2"
                       title="Edit"
                     >
                       <PencilIcon className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => setDeleteTarget(cat)}
-                      className="btn-ghost p-2 text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
+                      className="btn-ghost p-2 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
                       title="Delete"
                     >
                       <TrashIcon className="h-4 w-4" />

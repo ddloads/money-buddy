@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { useEffect } from 'react'
 import { useCurrency } from '../hooks/useCurrency'
+import Spinner from './Spinner'
 
 const FREQUENCY_OPTIONS = [
   { value: 'monthly', label: 'Monthly' },
@@ -49,32 +50,32 @@ export default function IncomeForm({ defaultValues, onSubmit, isLoading, submitL
       {/* Name */}
       <div>
         <label className="label" htmlFor="income-name">
-          Income Source <span className="text-red-500">*</span>
+          Income Source <span className="text-rose-400">*</span>
         </label>
         <input
           id="income-name"
           type="text"
-          className={`input ${errors.name ? 'border-red-400 focus:ring-red-400' : ''}`}
+          className={`input ${errors.name ? 'input-error' : ''}`}
           placeholder="e.g. Salary, Freelance, Rental Income"
           {...register('name', { required: 'Name is required' })}
         />
-        {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
+        {errors.name && <p className="field-error">{errors.name.message}</p>}
       </div>
 
       {/* Amount + Frequency */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="label" htmlFor="income-amount">
-            Amount <span className="text-red-500">*</span>
+            Amount <span className="text-rose-400">*</span>
           </label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">{symbol}</span>
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 text-sm">{symbol}</span>
             <input
               id="income-amount"
               type="number"
               step="0.01"
               min="0.01"
-              className={`input pl-7 ${errors.amount ? 'border-red-400 focus:ring-red-400' : ''}`}
+              className={`input pl-8 ${errors.amount ? 'input-error' : ''}`}
               placeholder="0.00"
               {...register('amount', {
                 required: 'Amount is required',
@@ -82,13 +83,11 @@ export default function IncomeForm({ defaultValues, onSubmit, isLoading, submitL
               })}
             />
           </div>
-          {errors.amount && <p className="mt-1 text-xs text-red-500">{errors.amount.message}</p>}
+          {errors.amount && <p className="field-error">{errors.amount.message}</p>}
         </div>
 
         <div>
-          <label className="label" htmlFor="income-frequency">
-            Frequency
-          </label>
+          <label className="label" htmlFor="income-frequency">Frequency</label>
           <select id="income-frequency" className="input" {...register('frequency')}>
             {FREQUENCY_OPTIONS.map(({ value, label }) => (
               <option key={value} value={value}>{label}</option>
@@ -100,7 +99,7 @@ export default function IncomeForm({ defaultValues, onSubmit, isLoading, submitL
       {/* Start Date */}
       <div>
         <label className="label" htmlFor="income-start-date">
-          Start Date <span className="text-xs text-gray-400 font-normal">(optional — for one-time income placement on chart)</span>
+          Start Date <span className="text-xs text-slate-500 font-normal">(optional — for one-time income placement on chart)</span>
         </label>
         <input
           id="income-start-date"
@@ -113,19 +112,19 @@ export default function IncomeForm({ defaultValues, onSubmit, isLoading, submitL
       {/* Active toggle */}
       <label
         htmlFor="income-is-active"
-        className="flex items-start gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-gray-900/40 p-4 cursor-pointer hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+        className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 cursor-pointer hover:border-blue-500/50 transition-colors"
       >
         <input
           id="income-is-active"
           type="checkbox"
-          className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900"
+          className="mt-1 h-4 w-4 rounded border-white/20 bg-midnight-800 text-blue-500 focus:ring-blue-500"
           {...register('is_active')}
         />
         <span>
-          <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+          <span className="block text-sm font-medium text-slate-100">
             Active income source
           </span>
-          <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <span className="block text-xs text-slate-400 mt-0.5">
             Include this in income totals and comparisons.
           </span>
         </span>
@@ -133,9 +132,7 @@ export default function IncomeForm({ defaultValues, onSubmit, isLoading, submitL
 
       {/* Notes */}
       <div>
-        <label className="label" htmlFor="income-notes">
-          Notes
-        </label>
+        <label className="label" htmlFor="income-notes">Notes</label>
         <textarea
           id="income-notes"
           rows={3}
@@ -149,10 +146,7 @@ export default function IncomeForm({ defaultValues, onSubmit, isLoading, submitL
       <button type="submit" disabled={isLoading} className="btn-primary w-full py-2.5">
         {isLoading ? (
           <span className="flex items-center gap-2">
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
+            <Spinner />
             Saving…
           </span>
         ) : (

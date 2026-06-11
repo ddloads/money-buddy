@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import {
   PlusIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   ArrowsUpDownIcon,
   XMarkIcon,
   ArrowDownTrayIcon,
@@ -81,7 +80,12 @@ export default function Bills() {
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="page-header">Bills</h1>
+        <div>
+          <h1 className="page-header">Bills</h1>
+          <p className="text-sm text-slate-400 mt-0.5">
+            Everything you owe, in one place.
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleExport}
@@ -102,18 +106,18 @@ export default function Bills() {
       {/* Search + Sort */}
       <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search bills…"
-            className="input pl-9 pr-9"
+            className="input pl-10 pr-9"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
             >
               <XMarkIcon className="h-4 w-4" />
             </button>
@@ -124,7 +128,7 @@ export default function Bills() {
         <div className="relative">
           <button
             onClick={() => setShowSort(!showSort)}
-            className="btn-secondary gap-2 w-full sm:w-auto justify-center sm:justify-start flex-shrink-0"
+            className="btn-secondary gap-2 w-full sm:w-auto justify-center sm:justify-start flex-shrink-0 py-2.5"
           >
             <ArrowsUpDownIcon className="h-4 w-4" />
             <span className="hidden sm:inline text-xs">
@@ -134,15 +138,15 @@ export default function Bills() {
           {showSort && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowSort(false)} />
-              <div className="absolute right-0 mt-1 w-full min-w-52 sm:w-52 card z-20 py-1 shadow-lg">
+              <div className="absolute right-0 mt-1 w-full min-w-52 sm:w-52 card z-20 py-1 shadow-card-hover">
                 {SORT_OPTIONS.map(({ value, label }) => (
                   <button
                     key={value}
                     onClick={() => { setSort(value); setShowSort(false) }}
                     className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                       sort === value
-                        ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 font-medium'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        ? 'text-emerald-300 bg-emerald-500/10 font-medium'
+                        : 'text-slate-300 hover:bg-white/[0.05]'
                     }`}
                   >
                     {label}
@@ -162,8 +166,8 @@ export default function Bills() {
             onClick={() => setFilter(value)}
             className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
               filter === value
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:border-emerald-400'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-glow'
+                : 'bg-white/[0.04] text-slate-400 border border-white/10 hover:border-emerald-500/50 hover:text-slate-200'
             }`}
           >
             {label}
@@ -192,8 +196,8 @@ export default function Bills() {
       ) : isError ? (
         <div className="card p-8 text-center">
           <div className="text-4xl mb-3">⚠️</div>
-          <p className="text-gray-700 dark:text-gray-300 font-medium mb-1">Failed to load bills</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <p className="text-slate-200 font-medium mb-1">Failed to load bills</p>
+          <p className="text-sm text-slate-400 mb-4">
             There was a problem connecting to the server.
           </p>
           <button onClick={() => refetch()} className="btn-primary">
@@ -205,14 +209,14 @@ export default function Bills() {
           <div className="text-5xl mb-4">
             {search ? '🔍' : filter ? '✅' : '📄'}
           </div>
-          <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">
+          <p className="text-lg font-semibold text-slate-100 mb-1">
             {search
               ? `No results for "${search}"`
               : filter
               ? `No ${filter} bills`
               : 'No bills yet'}
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">
+          <p className="text-sm text-slate-400 mb-5">
             {search || filter
               ? 'Try adjusting your filters or search term.'
               : 'Add your first bill to start tracking your payments.'}
@@ -226,7 +230,7 @@ export default function Bills() {
         </div>
       ) : (
         <>
-          <p className="text-xs text-gray-400 dark:text-gray-500">
+          <p className="text-xs text-slate-500">
             {totalBills} bill{totalBills !== 1 ? 's' : ''}
             {filter ? ` · ${filter}` : ''}
             {search ? ` · matching "${search}"` : ''}

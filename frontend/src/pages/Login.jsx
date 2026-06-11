@@ -8,7 +8,7 @@ import Spinner from '../components/Spinner'
 import GoogleIcon from '../components/GoogleIcon'
 
 export default function Login() {
-  const { login, googleAuthEnabled, googleAuthStatus } = useAuth()
+  const { login } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [searchParams] = useSearchParams()
   const {
@@ -130,30 +130,25 @@ export default function Login() {
             </button>
           </form>
 
-          {googleAuthEnabled && (
-            <>
-              {/* Divider */}
-              <div className="relative my-5">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-white/10" />
-                </div>
-                <div className="relative flex justify-center text-xs text-slate-500">
-                  <span className="bg-midnight-900 px-3">or continue with</span>
-                </div>
-              </div>
+          {/* Divider */}
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10" />
+            </div>
+            <div className="relative flex justify-center text-xs text-slate-500">
+              <span className="bg-midnight-900 px-3">or continue with</span>
+            </div>
+          </div>
 
-              {/* Google login */}
-              <button
-                type="button"
-                onClick={() => { window.location.href = '/api/auth/google' }}
-                disabled={googleAuthStatus.isLoading}
-                className="btn-secondary w-full py-2.5"
-              >
-                <GoogleIcon />
-                Sign in with Google
-              </button>
-            </>
-          )}
+          {/* Google login */}
+          <button
+            type="button"
+            onClick={() => { window.location.href = '/api/auth/google' }}
+            className="btn-secondary w-full py-2.5"
+          >
+            <GoogleIcon />
+            Sign in with Google
+          </button>
 
           {/* Register link */}
           <p className="text-center text-sm text-slate-400 mt-5">

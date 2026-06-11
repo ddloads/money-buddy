@@ -8,7 +8,7 @@ import Spinner from '../components/Spinner'
 import GoogleIcon from '../components/GoogleIcon'
 
 export default function Register() {
-  const { register: registerMutation, googleAuthEnabled, googleAuthStatus } = useAuth()
+  const { register: registerMutation } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [searchParams] = useSearchParams()
@@ -200,30 +200,25 @@ export default function Register() {
             </button>
           </form>
 
-          {googleAuthEnabled && (
-            <>
-              {/* Divider */}
-              <div className="relative my-5">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-white/10" />
-                </div>
-                <div className="relative flex justify-center text-xs text-slate-500">
-                  <span className="bg-midnight-900 px-3">or</span>
-                </div>
-              </div>
+          {/* Divider */}
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10" />
+            </div>
+            <div className="relative flex justify-center text-xs text-slate-500">
+              <span className="bg-midnight-900 px-3">or</span>
+            </div>
+          </div>
 
-              {/* Google */}
-              <button
-                type="button"
-                onClick={() => { window.location.href = '/api/auth/google' }}
-                disabled={googleAuthStatus.isLoading}
-                className="btn-secondary w-full py-2.5"
-              >
-                <GoogleIcon />
-                Sign up with Google
-              </button>
-            </>
-          )}
+          {/* Google */}
+          <button
+            type="button"
+            onClick={() => { window.location.href = '/api/auth/google' }}
+            className="btn-secondary w-full py-2.5"
+          >
+            <GoogleIcon />
+            Sign up with Google
+          </button>
 
           <p className="text-center text-sm text-slate-400 mt-5">
             Already have an account?{' '}

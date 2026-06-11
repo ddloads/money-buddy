@@ -8,6 +8,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Deep navy "midnight" surface scale — the app is dark-only
+        midnight: {
+          950: '#060a13',
+          900: '#0a1120',
+          850: '#0d1526',
+          800: '#111b30',
+          700: '#1a2742',
+          600: '#253556',
+        },
         emerald: {
           50: '#ecfdf5',
           100: '#d1fae5',
@@ -26,7 +35,7 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       animation: {
-        'fade-in': 'fadeIn 0.2s ease-in-out',
+        'fade-in': 'fadeIn 0.25s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
@@ -36,13 +45,15 @@ export default {
           '100%': { opacity: '1' },
         },
         slideUp: {
-          '0%': { transform: 'translateY(10px)', opacity: '0' },
+          '0%': { transform: 'translateY(12px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
       },
       boxShadow: {
-        'card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-        'card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        'card': '0 1px 2px 0 rgb(0 0 0 / 0.35), 0 0 0 1px rgb(255 255 255 / 0.02)',
+        'card-hover': '0 8px 24px -8px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 255 255 / 0.04)',
+        'glow': '0 0 24px -6px rgb(16 185 129 / 0.45)',
+        'glow-blue': '0 0 24px -6px rgb(59 130 246 / 0.45)',
       },
     },
   },

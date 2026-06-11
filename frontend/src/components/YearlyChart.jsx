@@ -15,13 +15,13 @@ const YEAR_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
 const CustomTooltip = ({ active, payload, label, format }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{label}</p>
+    <div className="bg-midnight-800 border border-white/10 rounded-xl shadow-card-hover p-3">
+      <p className="text-sm font-semibold text-slate-200 mb-2">{label}</p>
       {payload.map((entry) => (
         <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
           <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }} />
-          <span className="text-gray-600 dark:text-gray-400">{entry.name}:</span>
-          <span className="font-medium text-gray-900 dark:text-gray-100">{format(entry.value)}</span>
+          <span className="text-slate-400">{entry.name}:</span>
+          <span className="font-medium text-white">{format(entry.value)}</span>
         </div>
       ))}
     </div>
@@ -49,7 +49,7 @@ export default function YearlyChart({ data, loading }) {
       <div className="h-64 flex items-center justify-center">
         <div className="text-center">
           <div className="text-3xl mb-2">📊</div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Not enough data yet</p>
+          <p className="text-sm text-slate-400">Not enough data yet</p>
         </div>
       </div>
     )
@@ -60,26 +60,26 @@ export default function YearlyChart({ data, loading }) {
   return (
     <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(156,163,175,0.2)" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.12)" vertical={false} />
         <XAxis
           dataKey="month_name"
           tick={{ fontSize: 12, fill: 'currentColor' }}
           axisLine={false}
           tickLine={false}
-          className="text-gray-500 dark:text-gray-400"
+          className="text-slate-500"
         />
         <YAxis
           tick={{ fontSize: 11, fill: 'currentColor' }}
           axisLine={false}
           tickLine={false}
           tickFormatter={(v) => format(v)}
-          className="text-gray-500 dark:text-gray-400"
+          className="text-slate-500"
           width={65}
         />
         <Tooltip content={<CustomTooltip format={format} />} cursor={{ fill: 'rgba(16,185,129,0.05)' }} />
         <Legend
           formatter={(value) => (
-            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{value}</span>
+            <span className="text-xs font-medium text-slate-400">{value}</span>
           )}
         />
         {years.map((year, i) => (

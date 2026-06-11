@@ -48,14 +48,14 @@ export default function Dashboard() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="page-header">Good day, {firstName}! 👋</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{today}</p>
+          <p className="text-sm text-slate-400 mt-0.5">{today}</p>
         </div>
         <button
           onClick={() => navigate('/bills/new')}
           className="btn-primary w-full sm:w-auto sm:flex-shrink-0"
         >
           <PlusIcon className="h-4 w-4" />
-          <span className="hidden sm:inline">Add Bill</span>
+          Add Bill
         </button>
       </div>
 
@@ -94,22 +94,22 @@ export default function Dashboard() {
                 <div className="skeleton h-7 w-16 mb-2" />
                 <div className="skeleton h-3 w-20" />
               </div>
-              <div className="skeleton h-10 w-10 rounded-lg" />
+              <div className="skeleton h-10 w-10 rounded-xl" />
             </div>
           </div>
         ) : (
-          <div className="card p-5 hover:shadow-card-hover transition-shadow duration-200 animate-fade-in">
+          <div className="card-interactive p-5 animate-fade-in">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Income</p>
-                  <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 text-xs">
+                  <p className="text-sm font-medium text-slate-400">Income</p>
+                  <div className="flex rounded-lg overflow-hidden border border-white/10 text-xs">
                     <button
                       onClick={() => setIncomePeriod('monthly')}
                       className={`px-1.5 py-0.5 font-medium transition-colors ${
                         incomePeriod === 'monthly'
                           ? 'bg-blue-600 text-white'
-                          : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          : 'text-slate-400 hover:bg-white/[0.06]'
                       }`}
                     >
                       Mo
@@ -119,22 +119,22 @@ export default function Dashboard() {
                       className={`px-1.5 py-0.5 font-medium transition-colors ${
                         incomePeriod === 'weekly'
                           ? 'bg-blue-600 text-white'
-                          : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          : 'text-slate-400 hover:bg-white/[0.06]'
                       }`}
                     >
                       Wk
                     </button>
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300 truncate">
+                <p className="text-2xl font-bold text-blue-300 truncate">
                   {formatCurrency(displayedIncome)}
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   vs {formatCurrency(displayedBills)} in bills
                 </p>
               </div>
-              <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex-shrink-0">
-                <BanknotesIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-2.5 rounded-xl bg-blue-500/15 flex-shrink-0">
+                <BanknotesIcon className="h-6 w-6 text-blue-400" />
               </div>
             </div>
           </div>
@@ -150,7 +150,7 @@ export default function Dashboard() {
               <h2 className="section-title">Upcoming Bills</h2>
               <button
                 onClick={() => navigate('/bills')}
-                className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-medium"
+                className="text-sm text-emerald-400 hover:underline flex items-center gap-1 font-medium"
               >
                 View all
                 <ArrowRightIcon className="h-3.5 w-3.5" />
@@ -160,9 +160,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Quick actions / tips (1/3 width) */}
+        {/* Monthly progress + quick add (1/3 width) */}
         <div className="space-y-4">
-          {/* Progress ring / mini summary */}
           <div className="card p-5">
             <h2 className="section-title mb-4">Monthly Progress</h2>
             {summaryLoading ? (
@@ -174,13 +173,13 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 <div>
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <div className="flex justify-between text-xs text-slate-400 mb-1.5">
                     <span>Bills paid</span>
-                    <span>{summary?.paid_percentage ?? 0}%</span>
+                    <span className="font-medium text-slate-300">{summary?.paid_percentage ?? 0}%</span>
                   </div>
-                  <div className="h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                  <div className="h-2.5 bg-white/[0.06] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                      className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-700"
                       style={{ width: `${summary?.paid_percentage ?? 0}%` }}
                     />
                   </div>
@@ -188,14 +187,14 @@ export default function Dashboard() {
 
                 <div className="pt-1 space-y-1.5">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Amount paid</span>
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span className="text-slate-400">Amount paid</span>
+                    <span className="font-semibold text-emerald-400">
                       {formatCurrency(summary?.amount_paid_this_month ?? 0)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Still owed</span>
-                    <span className="font-semibold text-red-500">
+                    <span className="text-slate-400">Still owed</span>
+                    <span className="font-semibold text-rose-400">
                       {formatCurrency(Math.max(0, parseFloat(summary?.amount_due_this_month ?? 0) - parseFloat(summary?.amount_paid_this_month ?? 0)))}
                     </span>
                   </div>
@@ -205,11 +204,10 @@ export default function Dashboard() {
           </div>
 
           {/* Quick add */}
-          <div className="card p-5 bg-gradient-to-br from-emerald-500 to-emerald-700 dark:from-emerald-700 dark:to-emerald-900 border-0">
+          <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-emerald-600 to-teal-700 shadow-glow">
+            <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
             <h3 className="text-white font-semibold mb-1">Track a new bill</h3>
-            <p className="text-emerald-100 text-xs mb-3">
-              Never miss a payment again.
-            </p>
+            <p className="text-emerald-100 text-xs mb-3">Never miss a payment again.</p>
             <button
               onClick={() => navigate('/bills/new')}
               className="btn bg-white text-emerald-700 hover:bg-emerald-50 text-sm py-2 px-4 font-semibold w-full"
@@ -226,8 +224,8 @@ export default function Dashboard() {
         <div className="card p-5">
           <div className="mb-4">
             <h2 className="section-title">Monthly Overview</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              Bills total, paid & unpaid — last 6 months
+            <p className="text-xs text-slate-500 mt-0.5">
+              Bills total, paid &amp; unpaid — last 6 months
             </p>
           </div>
           <MonthlyChart data={monthly} loading={monthlyLoading} />
@@ -236,8 +234,8 @@ export default function Dashboard() {
         <div className="card p-5">
           <div className="mb-4">
             <h2 className="section-title">Spending by Category</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              This month's bills broken down by category
+            <p className="text-xs text-slate-500 mt-0.5">
+              This month&apos;s bills broken down by category
             </p>
           </div>
           <CategoryChart data={categories} loading={categoriesLoading} />
@@ -249,13 +247,13 @@ export default function Dashboard() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
           <div>
             <h2 className="section-title">Income vs Expenses</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Monthly income compared to your bill expenses — last 6 months
             </p>
           </div>
           <button
             onClick={() => navigate('/income')}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 font-medium flex-shrink-0"
+            className="text-sm text-blue-400 hover:underline flex items-center gap-1 font-medium flex-shrink-0"
           >
             Manage income
             <ArrowRightIcon className="h-3.5 w-3.5" />
@@ -269,13 +267,13 @@ export default function Dashboard() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div>
             <h2 className="section-title">Year-over-Year</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Monthly spending comparison across years
             </p>
           </div>
           <button
             onClick={() => setShowYearly((v) => !v)}
-            className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
+            className="text-sm text-emerald-400 hover:underline font-medium"
           >
             {showYearly ? 'Hide' : 'Show'}
           </button>
@@ -283,7 +281,7 @@ export default function Dashboard() {
         {showYearly && <YearlyChart data={yearly} loading={yearlyLoading} />}
         {!showYearly && (
           <div className="h-12 flex items-center justify-center">
-            <p className="text-sm text-gray-400 dark:text-gray-500">Click "Show" to compare years</p>
+            <p className="text-sm text-slate-500">Click &quot;Show&quot; to compare years</p>
           </div>
         )}
       </div>

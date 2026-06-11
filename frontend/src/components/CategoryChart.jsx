@@ -10,14 +10,14 @@ const CustomTooltip = ({ active, payload, format }) => {
   if (!active || !payload?.length) return null
   const { name, value, payload: d } = payload[0]
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 text-sm">
-      <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">
+    <div className="bg-midnight-800 border border-white/10 rounded-xl shadow-card-hover p-3 text-sm">
+      <p className="font-semibold text-slate-200 mb-1">
         {d.icon ? `${d.icon} ` : ''}{name}
       </p>
-      <p className="text-gray-600 dark:text-gray-400">
-        Total: <span className="font-medium text-gray-900 dark:text-gray-100">{format(value)}</span>
+      <p className="text-slate-400">
+        Total: <span className="font-medium text-white">{format(value)}</span>
       </p>
-      <p className="text-gray-500 dark:text-gray-400 text-xs">{d.count} bill{d.count !== 1 ? 's' : ''}</p>
+      <p className="text-slate-500 text-xs">{d.count} bill{d.count !== 1 ? 's' : ''}</p>
     </div>
   )
 }
@@ -44,7 +44,7 @@ export default function CategoryChart({ data, loading }) {
       <div className="h-56 flex items-center justify-center">
         <div className="text-center">
           <div className="text-3xl mb-2">🏷️</div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">No categorised bills this month</p>
+          <p className="text-sm text-slate-400">No categorised bills this month</p>
         </div>
       </div>
     )
@@ -80,7 +80,7 @@ export default function CategoryChart({ data, loading }) {
         <Tooltip content={<CustomTooltip format={format} />} />
         <Legend
           formatter={(value) => (
-            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{value}</span>
+            <span className="text-xs font-medium text-slate-400">{value}</span>
           )}
         />
       </PieChart>

@@ -16,6 +16,12 @@ jobs:
           ENDPOINT_ID: 3
           GIT_COMMIT: ${{ github.sha }}
         run: |
+          if [ -z "$PORTAINER_TOKEN" ]; then
+            echo "ERROR: PORTAINER_TOKEN secret is not set."
+            echo "Add it at: github.com/ddloads/money-buddy/settings/secrets/actions"
+            exit 1
+          fi
+
           STACK=$(curl -sf -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID")
 
           UPDATED_ENV=$(echo "$STACK" | python3 -c "import sys,json,os;s=json.load(sys.stdin);e=s.get('Env',[]);e=[x for x in e if x['name']!='GIT_COMMIT'];e.append({'name':'GIT_COMMIT','value':os.environ['GIT_COMMIT']});print(json.dumps(e))")

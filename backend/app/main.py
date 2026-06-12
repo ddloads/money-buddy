@@ -66,6 +66,12 @@ async def lifespan(app: FastAPI):
         )
         await conn.execute(
             text(
+                "ALTER TABLE users "
+                "ADD COLUMN IF NOT EXISTS default_categories_seeded_at TIMESTAMPTZ"
+            )
+        )
+        await conn.execute(
+            text(
                 "ALTER TABLE categories "
                 "ADD COLUMN IF NOT EXISTS monthly_budget NUMERIC(12,2)"
             )

@@ -53,7 +53,8 @@ class Bill(Base):
     interest_rate: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
     remaining_balance: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    receipt_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    receipt_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # Local file path (deprecated in favor of cloud storage)
+    receipt_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)  # Cloud storage URL (Appwrite, etc.)
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     last_reminded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(

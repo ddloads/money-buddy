@@ -15,10 +15,10 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.bill import Bill
-from app.models.category import Category
 from app.models.user import User
 from app.schemas.auth import LoginRequest, Token
 from app.schemas.user import PasswordChange, UserCreate, UserRead, UserUpdate
+from app.services.default_categories import ensure_default_categories
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -40,29 +40,6 @@ if settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET:
         jwks_uri="https://www.googleapis.com/oauth2/v3/certs",
         client_kwargs={"scope": "openid email profile"},
     )
-
-
-# ── Default categories ────────────────────────────────────────────────────────
-_DEFAULT_CATEGORIES = [
-    {"name": "Housing",       "icon": "🏠", "color": "#4f46e5"},
-    {"name": "Utilities",     "icon": "💡", "color": "#0ea5e9"},
-    {"name": "Transport",     "icon": "🚗", "color": "#f59e0b"},
-    {"name": "Groceries",     "icon": "🛒", "color": "#10b981"},
-    {"name": "Health",        "icon": "💊", "color": "#ef4444"},
-    {"name": "Entertainment", "icon": "🎬", "color": "#8b5cf6"},
-    {"name": "Subscriptions", "icon": "📱", "color": "#06b6d4"},
-    {"name": "Insurance",     "icon": "🛡️", "color": "#64748b"},
-    {"name": "Personal Care", "icon": "🧴", "color": "#ec4899"},
-    {"name": "Savings",       "icon": "💰", "color": "#84cc16"},
-]
-
-
-async def _seed_default_categories(db: AsyncSession, user_id: int) -> None:
-    """Add default categories for a newly created user (called once at registration)."""
-    db.add_all([
-        Category(user_id=user_id, name=c["name"], icon=c["icon"], color=c["color"])
-        for c in _DEFAULT_CATEGORIES
-    ])
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -101,7 +78,7 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)) -> d
     db.add(user)
     await db.flush()
     await db.refresh(user)
-    await _seed_default_categories(db, user.id)
+    await ensure_default_categories(db, user.id)
     logger.info("New user registered: %s (id=%s)", user.email, user.id)
     token = create_access_token(subject=user.id)
     return {"access_token": token, "token_type": "bearer", "user": user}
@@ -189,7 +166,7 @@ async def google_callback(request: Request, db: AsyncSession = Depends(get_db)):
             db.add(user)
             await db.flush()
             await db.refresh(user)
-            await _seed_default_categories(db, user.id)
+            await ensure_default_categories(db, user.id)
             logger.info("New Google user created: %s (id=%s)", user.email, user.id)
 
     token = create_access_token(subject=user.id)
@@ -283,7 +260,30 @@ async def delete_me(
             try:
                 os.remove(path)
             except OSError as exc:
-                logger.warning("Could not delete receipt %s: %s", path, exc)
+                logger.warning("Could not delete local receipt %s: %s", path, exc)
+    
+    # Also delete Appwrite storage files if they exist
+    appwrite_result = await db.execute(
+        select(Bill.receipt_url).where(
+            Bill.user_id == current_user.id,
+            Bill.receipt_url.is_not(None),
+        )
+    )
+    for (url,) in appwrite_result.all():
+        if url:
+            try:
+                # Extract file ID from Appwrite URL or delete by URL
+                # Appwrite URLs are like: https://xyz.appwrite.io/storage/buckets/{bucket}/files/{file_id}
+                import re
+                match = re.search(r'/files/([a-f0-9-]+)', url)
+                if match:
+                    file_id = match.group(1)
+                    from app.services.appwrite import AppwriteStorageService
+                    storage_service = AppwriteStorageService()
+                    await storage_service.delete_file(file_id)
+                    logger.info("Deleted Appwrite receipt URL: %s", url[:80] + "...")
+            except Exception as exc:
+                logger.warning("Could not delete Appwrite receipt %s: %s", url, exc)
 
     await db.delete(current_user)
     await db.flush()

@@ -78,3 +78,14 @@ def test_bill_mutations_refresh_server_managed_columns_before_serialization():
     for route_name in {"create_bill", "update_bill", "mark_bill_paid", "mark_bill_unpaid"}:
         assert route_name in route_sources
         assert "refresh" in route_sources[route_name]
+
+
+def test_categories_route_backfills_default_categories_for_legacy_users():
+    route_sources = {
+        route.name: route.endpoint.__code__.co_names
+        for route in app.routes
+        if route.path == "/categories"
+    }
+
+    assert "list_categories" in route_sources
+    assert "ensure_default_categories" in route_sources["list_categories"]

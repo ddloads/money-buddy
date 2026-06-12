@@ -22,6 +22,9 @@ class User(Base):
     notif_overdue_alerts: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     notif_weekly_summary: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default='USD', nullable=False)
+    default_categories_seeded_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

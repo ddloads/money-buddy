@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user
+from app.core.appwrite_config import appwrite_settings
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.bill import Bill, RecurrenceInterval
@@ -206,12 +207,27 @@ async def delete_bill(
 ) -> None:
     """Permanently delete a bill."""
     bill = await _get_bill_or_404(db, bill_id, current_user.id)
-    # Remove receipt file if present
+    # Remove receipt file if present (local storage)
     if bill.receipt_path and os.path.exists(bill.receipt_path):
         try:
             os.remove(bill.receipt_path)
         except OSError as exc:
-            logger.warning("Could not delete receipt file %s: %s", bill.receipt_path, exc)
+            logger.warning("Could not delete local receipt file %s: %s", bill.receipt_path, exc)
+    
+    # Also delete Appwrite storage file if present
+    if bill.receipt_url:
+        try:
+            import re
+            match = re.search(r'/files/([a-f0-9-]+)', bill.receipt_url)
+            if match:
+                file_id = match.group(1)
+                from app.services.appwrite import AppwriteStorageService
+                storage_service = AppwriteStorageService()
+                await storage_service.delete_file(file_id)
+                logger.info("Deleted Appwrite receipt for bill %s", bill.id)
+        except Exception as exc:
+            logger.warning("Could not delete Appwrite receipt %s: %s", bill.receipt_url, exc)
+    
     await db.delete(bill)
     await db.flush()
 
@@ -314,7 +330,7 @@ async def upload_receipt(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Bill:
-    """Upload a receipt image or PDF for a bill."""
+    """Upload a receipt image or PDF for a bill using Appwrite storage."""
     bill = await _get_bill_or_404(db, bill_id, current_user.id)
 
     if file.content_type not in ALLOWED_MIME_TYPES:
@@ -340,26 +356,97 @@ async def upload_receipt(
         "application/pdf": ".pdf",
     }
     ext = ext_map.get(file.content_type, "")
-    filename = f"receipt_{bill.user_id}_{bill.id}_{uuid.uuid4().hex}{ext}"
-    save_path = os.path.join(settings.UPLOAD_DIR, filename)
+    
+    # Generate unique filename with user_id and bill_id for organization
+    unique_filename = f"receipt_{bill.user_id}_{bill.id}_{uuid.uuid4().hex}{ext}"
 
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    # Check if Appwrite is configured
+    appwrite_enabled = (
+        appwrite_settings.APPWRITE_PROJECT_ID and 
+        appwrite_settings.APPWRITE_API_KEY and
+        appwrite_settings.APPWRITE_ENDPOINT
+    )
 
-    # Remove old receipt if present
-    if bill.receipt_path and os.path.exists(bill.receipt_path):
+    receipt_url = None
+    
+    if appwrite_enabled:
+        # Use Appwrite storage service
         try:
-            os.remove(bill.receipt_path)
-        except OSError as exc:
-            logger.warning("Could not remove old receipt %s: %s", bill.receipt_path, exc)
+            from app.services.appwrite import AppwriteStorageService
+            
+            storage_service = AppwriteStorageService()
+            
+            # Upload to Appwrite with file contents directly
+            success, result = await storage_service.upload_file(
+                user_id=str(bill.user_id),
+                bill_id=str(bill.id),
+                file_path=None,  # Not using local file path
+                filename=unique_filename,
+                contents=contents  # Pass the file contents directly
+            )
+            
+            if success:
+                receipt_url = result
+                logger.info("Receipt uploaded to Appwrite for bill %s", bill.id)
+            else:
+                logger.error("Appwrite upload failed: %s", result)
+                # Fall back to local storage if Appwrite fails
+                appwrite_enabled = False
+                
+        except Exception as e:
+            error_msg = str(e)
+            if isinstance(e, dict):
+                error_msg = str(e.get('message', str(e)))
+            logger.error("Appwrite upload exception: %s", error_msg)
+            # Fall back to local storage if Appwrite fails
+            appwrite_enabled = False
+    else:
+        logger.info("Appwrite not configured, using local file storage")
+        
+        # FALLBACK: Use local file storage (original behavior)
+        save_path = os.path.join(settings.UPLOAD_DIR, unique_filename)
+        
+        os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+        
+        # Remove old receipt if present (both local and cloud)
+        if bill.receipt_path and os.path.exists(bill.receipt_path):
+            try:
+                os.remove(bill.receipt_path)
+            except OSError as exc:
+                logger.warning("Could not remove old local receipt %s: %s", bill.receipt_path, exc)
+        
+        # Also delete old Appwrite file if exists
+        if bill.receipt_url:
+            try:
+                import re
+                match = re.search(r'/files/([a-f0-9-]+)', bill.receipt_url)
+                if match:
+                    file_id = match.group(1)
+                    from app.services.appwrite import AppwriteStorageService
+                    storage_service = AppwriteStorageService()
+                    await storage_service.delete_file(file_id)
+            except Exception as exc:
+                logger.warning("Could not delete old Appwrite receipt %s: %s", bill.receipt_url, exc)
+        
+        with open(save_path, "wb") as fh:
+            fh.write(contents)
+        
+        bill.receipt_path = save_path
+        bill.receipt_url = None  # Clear cloud URL since we're using local storage
+        await db.flush()
+        await db.refresh(bill)
+        await db.refresh(bill, attribute_names=["category"])
+        logger.info("Receipt saved locally for bill %s → %s", bill.id, save_path)
+        
+    # SUCCESS: Appwrite upload worked - store the URL in receipt_url
+    if appwrite_enabled and receipt_url:
+        bill.receipt_url = receipt_url
+        bill.receipt_path = None  # Clear local path since we're using cloud storage
+        await db.flush()
+        await db.refresh(bill)
+        await db.refresh(bill, attribute_names=["category"])
+        logger.info("Receipt uploaded to Appwrite for bill %s → URL: %s", bill.id, receipt_url[:100] + "...")
 
-    with open(save_path, "wb") as fh:
-        fh.write(contents)
-
-    bill.receipt_path = save_path
-    await db.flush()
-    await db.refresh(bill)
-    await db.refresh(bill, attribute_names=["category"])
-    logger.info("Receipt uploaded for bill %s → %s", bill.id, save_path)
     return bill
 
 

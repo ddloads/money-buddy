@@ -11,6 +11,7 @@ from app.core.database import get_db
 from app.models.category import Category
 from app.models.user import User
 from app.schemas.category import CategoryCreate, CategoryRead, CategoryUpdate
+from app.services.default_categories import ensure_default_categories
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -32,6 +33,9 @@ async def list_categories(
     current_user: User = Depends(get_current_user),
 ) -> list[Category]:
     """List all categories for the current user."""
+    seeded = await ensure_default_categories(db, current_user.id)
+    if seeded:
+        logger.info("Backfilled %s default categories for user %s", seeded, current_user.id)
     result = await db.execute(
         select(Category).where(Category.user_id == current_user.id).order_by(Category.name)
     )

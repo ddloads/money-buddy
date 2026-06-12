@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, bills, categories, dashboard, income, templates
+from app.api import auth, bills, categories, dashboard, income, templates, dev
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +88,30 @@ async def lifespan(app: FastAPI):
                 "ADD COLUMN IF NOT EXISTS remaining_balance NUMERIC(12,2)"
             )
         )
+        await conn.execute(
+            text(
+                "ALTER TABLE bills "
+                "ADD COLUMN IF NOT EXISTS receipt_url VARCHAR(512)"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE bills "
+                "ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE bills "
+                "ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()"
+            )
+        )
+        await conn.execute(
+            text(
+                "ALTER TABLE users "
+                "ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()"
+            )
+        )
     logger.info("Database tables ready")
 
     yield
@@ -131,6 +155,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
     app.include_router(income.router, prefix="/income", tags=["Income"])
     app.include_router(templates.router, prefix="/templates", tags=["Templates"])
+    app.include_router(dev.router, prefix="/dev", tags=["Dev"])
 
     @app.get("/health", tags=["Health"])
     async def health_check():

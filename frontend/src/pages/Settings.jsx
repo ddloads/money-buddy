@@ -8,9 +8,11 @@ import {
   TrashIcon,
   CheckIcon,
   CurrencyDollarIcon,
+  WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../hooks/useAuth'
 import { useAuthStore } from '../store/authStore'
+import { devAPI } from '../utils/api'
 
 const CURRENCIES = [
   { code: 'USD', label: 'US Dollar (USD)' },
@@ -51,6 +53,8 @@ export default function Settings() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [profileSuccess, setProfileSuccess] = useState(false)
   const [passwordSuccess, setPasswordSuccess] = useState(false)
+  const [migrateStatus, setMigrateStatus] = useState(null)
+  const [migrateLoading, setMigrateLoading] = useState(false)
 
   const handleNotifToggle = (key, value) => {
     updateProfile.mutate({ [key]: value })
@@ -86,6 +90,19 @@ export default function Settings() {
         setTimeout(() => setPasswordSuccess(false), 3000)
       },
     })
+  }
+
+  const handleMigrate = async () => {
+    setMigrateLoading(true)
+    setMigrateStatus(null)
+    try {
+      const { data } = await devAPI.migrate()
+      setMigrateStatus({ ok: true, message: `Done — ${data.applied} statement(s) applied.`, errors: data.errors })
+    } catch (err) {
+      setMigrateStatus({ ok: false, message: err?.response?.data?.detail || 'Migration failed.' })
+    } finally {
+      setMigrateLoading(false)
+    }
   }
 
   const initials = user
@@ -268,6 +285,43 @@ export default function Settings() {
               </label>
             </div>
           ))}
+        </div>
+      </Section>
+
+      {/* ── Developer ────────────────────────────────────────────────────── */}
+      <Section title="Developer Tools" icon={WrenchScrewdriverIcon}>
+        <p className="text-xs text-slate-500">
+          Quick actions for development — safe to run anytime (all statements are idempotent).
+        </p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-slate-200">Run DB Migrations</p>
+              <p className="text-xs text-slate-500">
+                Applies any missing ALTER TABLE / CREATE TABLE statements to the live database.
+              </p>
+            </div>
+            <button
+              onClick={handleMigrate}
+              disabled={migrateLoading}
+              className="btn-secondary shrink-0 ml-4"
+            >
+              {migrateLoading ? 'Running…' : 'Run'}
+            </button>
+          </div>
+
+          {migrateStatus && (
+            <div className={migrateStatus.ok ? 'alert-success' : 'alert-error'}>
+              <p>{migrateStatus.message}</p>
+              {migrateStatus.errors?.length > 0 && (
+                <ul className="mt-1 text-xs space-y-0.5 opacity-80">
+                  {migrateStatus.errors.map((e, i) => (
+                    <li key={i}>{e.error}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       </Section>
 

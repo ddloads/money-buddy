@@ -113,3 +113,9 @@ export const templatesAPI = {
   create: (data) => api.post('/templates', data),
   delete: (id) => api.delete(`/templates/${id}`),
 }
+
+// ─── Dev ───────────────────────────────────────────────────────────────────
+
+export const devAPI = {
+  migrate: () => api.post('/dev/migrate'),
+}

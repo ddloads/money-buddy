@@ -24,6 +24,7 @@ export const useAuthStore = create(
 
       // Clear auth on logout
       logout: () => {
+        localStorage.removeItem('mb_auth')
         localStorage.removeItem('mb_token')
         localStorage.removeItem('mb_user')
         set({ user: null, token: null })

@@ -1,6 +1,9 @@
 FROM python:3.11-slim
 
 # ── Build args / labels ───────────────────────────────────────────────────────
+ARG GIT_COMMIT=unknown
+ENV GIT_COMMIT=$GIT_COMMIT
+
 LABEL maintainer="Money Buddy" \
       description="Money Buddy Bill Management API"
 

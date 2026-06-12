@@ -128,7 +128,7 @@ def create_app() -> FastAPI:
 
     @app.get("/health", tags=["Health"])
     async def health_check():
-        return {"status": "ok", "app": "Money Buddy"}
+        return {"status": "ok", "app": "Money Buddy", "git_commit": settings.GIT_COMMIT}
 
     return app
 

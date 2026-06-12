@@ -9,6 +9,8 @@ RUN npm ci --frozen-lockfile 2>/dev/null || npm install
 
 # Copy source and build
 COPY . .
+ARG GIT_COMMIT=unknown
+ENV VITE_GIT_COMMIT=$GIT_COMMIT
 RUN npm run build
 
 # ─── Stage 2: Serve ───────────────────────────────────────────────────────────

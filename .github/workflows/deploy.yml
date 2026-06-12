@@ -31,8 +31,9 @@ jobs:
           UPDATED_ENV=$(echo "$STACK" | python3 -c "import sys,json,os;s=json.load(sys.stdin);e=s.get('Env',[]);e=[x for x in e if x['name']!='GIT_COMMIT'];e.append({'name':'GIT_COMMIT','value':os.environ['GIT_COMMIT']});print(json.dumps(e))")
 
           # 4. Build PUT body with file content + updated env
-          PUT_BODY=$(python3 -c "import json,os;print(json.dumps({'StackFileContent':os.environ['STACK_FILE'],'Env':json.loads(os.environ['UPDATED_ENV']),'Prune':False,'PullImage':False}))" \
-            STACK_FILE="$STACK_FILE" UPDATED_ENV="$UPDATED_ENV")
+          echo "$STACK_FILE" > /tmp/sf.txt
+          echo "$UPDATED_ENV" > /tmp/ev.json
+          PUT_BODY=$(python3 -c "import json;print(json.dumps({'StackFileContent':open('/tmp/sf.txt').read(),'Env':json.loads(open('/tmp/ev.json').read()),'Prune':False,'PullImage':False}))")
 
           # 5. Persist updated env vars to Portainer
           PUT_STATUS=$(curl -s -o /tmp/put_resp.json -w "%{http_code}" -X PUT \

@@ -16,39 +16,44 @@ jobs:
           ENDPOINT_ID: 3
           GIT_COMMIT: ${{ github.sha }}
         run: |
-          set -x
+          set -e
 
-          if [ -z "$PORTAINER_TOKEN" ]; then
-            echo "ERROR: PORTAINER_TOKEN secret is not set."
-            exit 1
-          fi
-
-          echo "--- Fetching stack config ---"
-          STACK=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
-            -H "X-API-Key: $PORTAINER_TOKEN" \
+          # 1. Fetch current env vars
+          STACK=$(curl -sf -H "X-API-Key: $PORTAINER_TOKEN" \
             "$PORTAINER_URL/api/stacks/$STACK_ID")
-          echo "Stack response: $STACK"
 
-          HTTP_CODE=$(echo "$STACK" | grep -oP 'HTTP_STATUS:\K[0-9]+')
-          STACK_BODY=$(echo "$STACK" | sed '/HTTP_STATUS:/d')
-          echo "Stack fetch HTTP status: $HTTP_CODE"
+          # 2. Merge GIT_COMMIT into env array
+          UPDATED_ENV=$(echo "$STACK" | python3 -c "import sys,json,os;s=json.load(sys.stdin);e=s.get('Env',[]);e=[x for x in e if x['name']!='GIT_COMMIT'];e.append({'name':'GIT_COMMIT','value':os.environ['GIT_COMMIT']});print(json.dumps(e))")
 
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "ERROR: Failed to fetch stack (HTTP $HTTP_CODE). Check token and stack ID."
-            exit 1
-          fi
-
-          UPDATED_ENV=$(echo "$STACK_BODY" | python3 -c "import sys,json,os;s=json.load(sys.stdin);e=s.get('Env',[]);e=[x for x in e if x['name']!='GIT_COMMIT'];e.append({'name':'GIT_COMMIT','value':os.environ['GIT_COMMIT']});print(json.dumps(e))")
-          echo "Updated env (GIT_COMMIT set to $GIT_COMMIT)"
-
-          echo "--- Triggering redeploy ---"
-          REDEPLOY=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
+          # 3. Persist updated env vars to Portainer (no redeploy yet)
+          PUT_STATUS=$(curl -s -o /tmp/put_resp.json -w "%{http_code}" -X PUT \
             -H "X-API-Key: $PORTAINER_TOKEN" \
             -H "Content-Type: application/json" \
-            "$PORTAINER_URL/api/stacks/$STACK_ID/git/redeploy?endpointId=$ENDPOINT_ID" \
-            -d "{\"env\": $UPDATED_ENV, \"pullImage\": true, \"prune\": false}")
-          echo "Redeploy response: $REDEPLOY"
+            "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID" \
+            -d "{\"env\": $UPDATED_ENV, \"prune\": false, \"pullImage\": false}")
+          echo "PUT env vars → HTTP $PUT_STATUS"
+          cat /tmp/put_resp.json
+          [ "$PUT_STATUS" = "200" ] || { echo "ERROR: env var update failed"; exit 1; }
 
-          REDEPLOY_STATUS=$(echo "$REDEPLOY" | grep -oP 'HTTP_STATUS:\K[0-9]+')
-          echo "Redeploy HTTP status: $REDEPLOY_STATUS"
-          [ "$REDEPLOY_STATUS" = "200" ] || exit 1
+          # 4. Get or create a webhook for this stack
+          WEBHOOK=$(curl -s -X POST \
+            -H "X-API-Key: $PORTAINER_TOKEN" \
+            "$PORTAINER_URL/api/stacks/$STACK_ID/webhook")
+          echo "Webhook response: $WEBHOOK"
+
+          WEBHOOK_TOKEN=$(echo "$WEBHOOK" | python3 -c "import sys,json;d=json.load(sys.stdin);url=d.get('webhookURL','');print(url.split('/')[-1] if url else d.get('token',''))" 2>/dev/null || true)
+          echo "Webhook token: $WEBHOOK_TOKEN"
+
+          if [ -z "$WEBHOOK_TOKEN" ]; then
+            echo "ERROR: could not retrieve webhook token from Portainer"
+            exit 1
+          fi
+
+          # 5. Trigger git pull + redeploy via webhook (no auth required)
+          TRIGGER_STATUS=$(curl -s -o /tmp/trigger_resp.json -w "%{http_code}" -X POST \
+            "$PORTAINER_URL/api/stacks/webhooks/$WEBHOOK_TOKEN")
+          echo "Webhook trigger → HTTP $TRIGGER_STATUS"
+          cat /tmp/trigger_resp.json
+          [ "$TRIGGER_STATUS" = "200" ] || [ "$TRIGGER_STATUS" = "204" ] || exit 1
+
+          echo "Deploy triggered successfully"

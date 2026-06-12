@@ -8,40 +8,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Redeploy stack with current commit hash
-        env:
-          PORTAINER_URL: https://portainer.ddsplayground.com
-          PORTAINER_TOKEN: ${{ secrets.PORTAINER_TOKEN }}
-          STACK_ID: 48
-          ENDPOINT_ID: 3
-          GIT_COMMIT: ${{ github.sha }}
+      - name: Trigger Portainer git redeploy via webhook
         run: |
-          set -e
-
-          # Fetch stack config and compose file
-          curl -sf -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID" > /tmp/stack.json
-          curl -sf -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID/file" > /tmp/file_resp.json
-          echo "$GIT_COMMIT" > /tmp/gc.txt
-
-          # Extract compose file content
-          python3 -c "import json;print(json.load(open('/tmp/file_resp.json'))['StackFileContent'],end='')" > /tmp/sf.txt
-
-          # Build updated env array (add/update GIT_COMMIT)
-          python3 -c "import json;s=json.load(open('/tmp/stack.json'));e=s.get('Env',[]);e=[x for x in e if x['name']!='GIT_COMMIT'];e.append({'name':'GIT_COMMIT','value':open('/tmp/gc.txt').read().strip()});open('/tmp/env.json','w').write(json.dumps(e))"
-
-          # Preserve git config (or restore known defaults if it was wiped)
-          python3 -c "import json;s=json.load(open('/tmp/stack.json'));g=s.get('GitConfig') or {'URL':'https://github.com/ddloads/money-buddy.git','ReferenceName':'refs/heads/master','ConfigFilePath':'docker-compose.yml','Authentication':None,'ConfigHash':'','TLSSkipVerify':False};g['ConfigHash']='';open('/tmp/git_cfg.json','w').write(json.dumps(g))"
-
-          # Build full PUT body (PullImage=true triggers git pull + rebuild)
-          python3 -c "import json;body={'StackFileContent':open('/tmp/sf.txt').read(),'Env':json.load(open('/tmp/env.json')),'Prune':False,'PullImage':True,'GitConfig':json.load(open('/tmp/git_cfg.json'))};open('/tmp/put_body.json','w').write(json.dumps(body))"
-
-          # PUT — update env vars, restore git config, trigger redeploy
-          PUT_STATUS=$(curl -s -o /tmp/put_resp.json -w "%{http_code}" -X PUT \
-            -H "X-API-Key: $PORTAINER_TOKEN" \
-            -H "Content-Type: application/json" \
-            "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID" \
-            --data-binary @/tmp/put_body.json)
-          echo "PUT → HTTP $PUT_STATUS"
-          python3 -c "import json;d=json.load(open('/tmp/put_resp.json'));print('GitConfig:',json.dumps(d.get('GitConfig')));print('GIT_COMMIT:',next((x['value'] for x in d.get('Env',[]) if x['name']=='GIT_COMMIT'),'NOT FOUND'))"
-          [ "$PUT_STATUS" = "200" ] || { echo "ERROR:"; cat /tmp/put_resp.json; exit 1; }
-          echo "Done"
+          STATUS=$(curl -s -o /tmp/resp.json -w "%{http_code}" -X POST \
+            "${{ secrets.PORTAINER_WEBHOOK_URL }}")
+          echo "Webhook status: $STATUS"
+          cat /tmp/resp.json || true
+          [ "$STATUS" = "200" ] || [ "$STATUS" = "204" ] || exit 1
+          echo "Redeploy triggered"

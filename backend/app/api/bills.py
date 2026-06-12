@@ -72,17 +72,29 @@ async def _get_bill_or_404(db: AsyncSession, bill_id: int, user_id: int) -> Bill
 async def list_bills(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    is_paid: Optional[bool] = Query(None),
+    status: Optional[str] = Query(None),  # paid | unpaid | upcoming | overdue
     category_id: Optional[int] = Query(None),
     search: Optional[str] = Query(None, max_length=100),
+    sort: Optional[str] = Query("due_date_asc"),  # due_date_asc | due_date_desc | amount_asc | amount_desc | name_asc
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> BillListResponse:
-    """List bills for the current user with optional filters, search, and pagination."""
+    """List bills for the current user with optional filters, search, sort, and pagination."""
+    from datetime import timezone
+    now = datetime.now(timezone.utc)
+    upcoming_cutoff = now + timedelta(days=7)
+
     base_query = select(Bill).where(Bill.user_id == current_user.id)
 
-    if is_paid is not None:
-        base_query = base_query.where(Bill.is_paid == is_paid)
+    if status == "paid":
+        base_query = base_query.where(Bill.is_paid == True)  # noqa: E712
+    elif status == "unpaid":
+        base_query = base_query.where(Bill.is_paid == False)  # noqa: E712
+    elif status == "upcoming":
+        base_query = base_query.where(Bill.is_paid == False, Bill.due_date <= upcoming_cutoff)
+    elif status == "overdue":
+        base_query = base_query.where(Bill.is_paid == False, Bill.due_date < now)
+
     if category_id is not None:
         base_query = base_query.where(Bill.category_id == category_id)
     if search:
@@ -91,17 +103,24 @@ async def list_bills(
             or_(Bill.name.ilike(term), Bill.notes.ilike(term))
         )
 
-    # Count total
+    sort_map = {
+        "due_date_asc": Bill.due_date.asc(),
+        "due_date_desc": Bill.due_date.desc(),
+        "amount_asc": Bill.amount.asc(),
+        "amount_desc": Bill.amount.desc(),
+        "name_asc": Bill.name.asc(),
+    }
+    order_by = sort_map.get(sort, Bill.due_date.asc())
+
     count_result = await db.execute(
         select(func.count()).select_from(base_query.subquery())
     )
     total = count_result.scalar_one()
 
-    # Paginate
     offset = (page - 1) * page_size
     result = await db.execute(
         base_query.options(selectinload(Bill.category))
-        .order_by(Bill.due_date.asc())
+        .order_by(order_by)
         .offset(offset)
         .limit(page_size)
     )

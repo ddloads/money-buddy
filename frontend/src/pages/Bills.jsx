@@ -6,9 +6,11 @@ import {
   ArrowsUpDownIcon,
   XMarkIcon,
   ArrowDownTrayIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline'
 import BillCard from '../components/BillCard'
 import { useBills, useMarkBillPaid } from '../hooks/useBills'
+import { useCategories } from '../hooks/useCategories'
 import { billsAPI } from '../utils/api'
 
 const FILTERS = [
@@ -33,12 +35,16 @@ export default function Bills() {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('due_date_asc')
   const [showSort, setShowSort] = useState(false)
+  const [categoryId, setCategoryId] = useState('')
   const [exporting, setExporting] = useState(false)
+
+  const { data: categories = [] } = useCategories()
 
   const params = {
     status: filter || undefined,
     search: search || undefined,
     sort,
+    category_id: categoryId || undefined,
   }
 
   const {
@@ -103,7 +109,7 @@ export default function Bills() {
         </div>
       </div>
 
-      {/* Search + Sort */}
+      {/* Search + Category + Sort */}
       <div className="flex flex-col gap-2 sm:flex-row">
         <div className="relative flex-1">
           <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
@@ -124,11 +130,28 @@ export default function Bills() {
           )}
         </div>
 
+        {/* Category filter */}
+        {categories.length > 0 && (
+          <div className="relative flex-shrink-0">
+            <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+            <select
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+              className={`input pl-9 pr-8 appearance-none cursor-pointer sm:w-44 ${categoryId ? 'text-emerald-300 border-emerald-500/50' : ''}`}
+            >
+              <option value="">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Sort dropdown */}
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           <button
             onClick={() => setShowSort(!showSort)}
-            className="btn-secondary gap-2 w-full sm:w-auto justify-center sm:justify-start flex-shrink-0 py-2.5"
+            className="btn-secondary gap-2 w-full sm:w-auto justify-center sm:justify-start py-2.5"
           >
             <ArrowsUpDownIcon className="h-4 w-4" />
             <span className="hidden sm:inline text-xs">
@@ -233,6 +256,7 @@ export default function Bills() {
           <p className="text-xs text-slate-500">
             {totalBills} bill{totalBills !== 1 ? 's' : ''}
             {filter ? ` · ${filter}` : ''}
+            {categoryId ? ` · ${categories.find((c) => String(c.id) === String(categoryId))?.name ?? ''}` : ''}
             {search ? ` · matching "${search}"` : ''}
           </p>
           <div className="space-y-3">

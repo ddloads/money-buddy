@@ -176,6 +176,13 @@ export default function Layout() {
             <ArrowRightOnRectangleIcon className="h-5 w-5 flex-shrink-0" />
             <span>{logout.isPending ? 'Signing out…' : 'Sign Out'}</span>
           </button>
+
+          {/* Build version */}
+          {import.meta.env.VITE_GIT_COMMIT && import.meta.env.VITE_GIT_COMMIT !== 'unknown' && (
+            <p className="px-1 text-[10px] text-slate-600 font-mono">
+              {import.meta.env.VITE_GIT_COMMIT.slice(0, 7)}
+            </p>
+          )}
         </div>
       </aside>
 

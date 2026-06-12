@@ -16,21 +16,39 @@ jobs:
           ENDPOINT_ID: 3
           GIT_COMMIT: ${{ github.sha }}
         run: |
+          set -x
+
           if [ -z "$PORTAINER_TOKEN" ]; then
             echo "ERROR: PORTAINER_TOKEN secret is not set."
-            echo "Add it at: github.com/ddloads/money-buddy/settings/secrets/actions"
             exit 1
           fi
 
-          STACK=$(curl -sf -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID")
+          echo "--- Fetching stack config ---"
+          STACK=$(curl -s -w "\nHTTP_STATUS:%{http_code}" \
+            -H "X-API-Key: $PORTAINER_TOKEN" \
+            "$PORTAINER_URL/api/stacks/$STACK_ID")
+          echo "Stack response: $STACK"
 
-          UPDATED_ENV=$(echo "$STACK" | python3 -c "import sys,json,os;s=json.load(sys.stdin);e=s.get('Env',[]);e=[x for x in e if x['name']!='GIT_COMMIT'];e.append({'name':'GIT_COMMIT','value':os.environ['GIT_COMMIT']});print(json.dumps(e))")
+          HTTP_CODE=$(echo "$STACK" | grep -oP 'HTTP_STATUS:\K[0-9]+')
+          STACK_BODY=$(echo "$STACK" | sed '/HTTP_STATUS:/d')
+          echo "Stack fetch HTTP status: $HTTP_CODE"
 
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "ERROR: Failed to fetch stack (HTTP $HTTP_CODE). Check token and stack ID."
+            exit 1
+          fi
+
+          UPDATED_ENV=$(echo "$STACK_BODY" | python3 -c "import sys,json,os;s=json.load(sys.stdin);e=s.get('Env',[]);e=[x for x in e if x['name']!='GIT_COMMIT'];e.append({'name':'GIT_COMMIT','value':os.environ['GIT_COMMIT']});print(json.dumps(e))")
+          echo "Updated env (GIT_COMMIT set to $GIT_COMMIT)"
+
+          echo "--- Triggering redeploy ---"
+          REDEPLOY=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
             -H "X-API-Key: $PORTAINER_TOKEN" \
             -H "Content-Type: application/json" \
             "$PORTAINER_URL/api/stacks/$STACK_ID/git/redeploy?endpointId=$ENDPOINT_ID" \
             -d "{\"env\": $UPDATED_ENV, \"pullImage\": true, \"prune\": false}")
+          echo "Redeploy response: $REDEPLOY"
 
-          echo "Portainer redeploy status: $HTTP_STATUS"
-          [ "$HTTP_STATUS" = "200" ] || exit 1
+          REDEPLOY_STATUS=$(echo "$REDEPLOY" | grep -oP 'HTTP_STATUS:\K[0-9]+')
+          echo "Redeploy HTTP status: $REDEPLOY_STATUS"
+          [ "$REDEPLOY_STATUS" = "200" ] || exit 1

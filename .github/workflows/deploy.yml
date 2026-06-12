@@ -16,22 +16,10 @@ jobs:
           ENDPOINT_ID: 3
           GIT_COMMIT: ${{ github.sha }}
         run: |
-          # Fetch current stack env vars so we preserve everything
-          STACK=$(curl -sf \
-            -H "X-API-Key: $PORTAINER_TOKEN" \
-            "$PORTAINER_URL/api/stacks/$STACK_ID")
+          STACK=$(curl -sf -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID")
 
-          # Merge: keep all existing vars, update/add GIT_COMMIT
-          UPDATED_ENV=$(echo "$STACK" | python3 -c "
-import sys, json, os
-stack = json.load(sys.stdin)
-env = stack.get('Env', [])
-env = [e for e in env if e['name'] != 'GIT_COMMIT']
-env.append({'name': 'GIT_COMMIT', 'value': os.environ['GIT_COMMIT']})
-print(json.dumps(env))
-")
+          UPDATED_ENV=$(echo "$STACK" | python3 -c "import sys,json,os;s=json.load(sys.stdin);e=s.get('Env',[]);e=[x for x in e if x['name']!='GIT_COMMIT'];e.append({'name':'GIT_COMMIT','value':os.environ['GIT_COMMIT']});print(json.dumps(e))")
 
-          # Trigger git redeploy with the updated env
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
             -H "X-API-Key: $PORTAINER_TOKEN" \
             -H "Content-Type: application/json" \

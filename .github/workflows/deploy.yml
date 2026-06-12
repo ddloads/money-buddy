@@ -18,52 +18,30 @@ jobs:
         run: |
           set -e
 
-          # 1. Fetch current stack (env vars)
-          STACK=$(curl -sf -H "X-API-Key: $PORTAINER_TOKEN" \
-            "$PORTAINER_URL/api/stacks/$STACK_ID")
+          # Fetch stack config and compose file
+          curl -sf -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID" > /tmp/stack.json
+          curl -sf -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID/file" > /tmp/file_resp.json
+          echo "$GIT_COMMIT" > /tmp/gc.txt
 
-          # 2. Fetch current compose file content (required by PUT)
-          FILE_RESP=$(curl -sf -H "X-API-Key: $PORTAINER_TOKEN" \
-            "$PORTAINER_URL/api/stacks/$STACK_ID/file")
-          STACK_FILE=$(echo "$FILE_RESP" | python3 -c "import sys,json;print(json.load(sys.stdin)['StackFileContent'])")
+          # Extract compose file content
+          python3 -c "import json;print(json.load(open('/tmp/file_resp.json'))['StackFileContent'],end='')" > /tmp/sf.txt
 
-          # 3. Merge GIT_COMMIT into env array
-          UPDATED_ENV=$(echo "$STACK" | python3 -c "import sys,json,os;s=json.load(sys.stdin);e=s.get('Env',[]);e=[x for x in e if x['name']!='GIT_COMMIT'];e.append({'name':'GIT_COMMIT','value':os.environ['GIT_COMMIT']});print(json.dumps(e))")
+          # Build updated env array (add/update GIT_COMMIT)
+          python3 -c "import json;s=json.load(open('/tmp/stack.json'));e=s.get('Env',[]);e=[x for x in e if x['name']!='GIT_COMMIT'];e.append({'name':'GIT_COMMIT','value':open('/tmp/gc.txt').read().strip()});open('/tmp/env.json','w').write(json.dumps(e))"
 
-          # 4. Build PUT body with file content + updated env
-          echo "$STACK_FILE" > /tmp/sf.txt
-          echo "$UPDATED_ENV" > /tmp/ev.json
-          PUT_BODY=$(python3 -c "import json;print(json.dumps({'StackFileContent':open('/tmp/sf.txt').read(),'Env':json.loads(open('/tmp/ev.json').read()),'Prune':False,'PullImage':False}))")
+          # Preserve git config (or restore known defaults if it was wiped)
+          python3 -c "import json;s=json.load(open('/tmp/stack.json'));g=s.get('GitConfig') or {'URL':'https://github.com/ddloads/money-buddy.git','ReferenceName':'refs/heads/master','ConfigFilePath':'docker-compose.yml','Authentication':None,'ConfigHash':'','TLSSkipVerify':False};g['ConfigHash']='';open('/tmp/git_cfg.json','w').write(json.dumps(g))"
 
-          # 5. Persist updated env vars to Portainer
+          # Build full PUT body (PullImage=true triggers git pull + rebuild)
+          python3 -c "import json;body={'StackFileContent':open('/tmp/sf.txt').read(),'Env':json.load(open('/tmp/env.json')),'Prune':False,'PullImage':True,'GitConfig':json.load(open('/tmp/git_cfg.json'))};open('/tmp/put_body.json','w').write(json.dumps(body))"
+
+          # PUT — update env vars, restore git config, trigger redeploy
           PUT_STATUS=$(curl -s -o /tmp/put_resp.json -w "%{http_code}" -X PUT \
             -H "X-API-Key: $PORTAINER_TOKEN" \
             -H "Content-Type: application/json" \
             "$PORTAINER_URL/api/stacks/$STACK_ID?endpointId=$ENDPOINT_ID" \
-            -d "$PUT_BODY")
-          echo "PUT env vars → HTTP $PUT_STATUS"
-          cat /tmp/put_resp.json
-          [ "$PUT_STATUS" = "200" ] || { echo "ERROR: env var update failed"; exit 1; }
-
-          # 6. Get or create a webhook for this stack
-          WEBHOOK=$(curl -s -X POST \
-            -H "X-API-Key: $PORTAINER_TOKEN" \
-            "$PORTAINER_URL/api/stacks/$STACK_ID/webhook")
-          echo "Webhook response: $WEBHOOK"
-
-          WEBHOOK_TOKEN=$(echo "$WEBHOOK" | python3 -c "import sys,json;d=json.load(sys.stdin);url=d.get('webhookURL','');print(url.split('/')[-1] if url else d.get('token',''))" 2>/dev/null || true)
-          echo "Webhook token: $WEBHOOK_TOKEN"
-
-          if [ -z "$WEBHOOK_TOKEN" ]; then
-            echo "ERROR: could not retrieve webhook token from Portainer"
-            exit 1
-          fi
-
-          # 7. Trigger git pull + redeploy via webhook
-          TRIGGER_STATUS=$(curl -s -o /tmp/trigger_resp.json -w "%{http_code}" -X POST \
-            "$PORTAINER_URL/api/stacks/webhooks/$WEBHOOK_TOKEN")
-          echo "Webhook trigger → HTTP $TRIGGER_STATUS"
-          cat /tmp/trigger_resp.json
-          [ "$TRIGGER_STATUS" = "200" ] || [ "$TRIGGER_STATUS" = "204" ] || exit 1
-
-          echo "Deploy triggered successfully"
+            --data-binary @/tmp/put_body.json)
+          echo "PUT → HTTP $PUT_STATUS"
+          python3 -c "import json;d=json.load(open('/tmp/put_resp.json'));print('GitConfig:',json.dumps(d.get('GitConfig')));print('GIT_COMMIT:',next((x['value'] for x in d.get('Env',[]) if x['name']=='GIT_COMMIT'),'NOT FOUND'))"
+          [ "$PUT_STATUS" = "200" ] || { echo "ERROR:"; cat /tmp/put_resp.json; exit 1; }
+          echo "Done"

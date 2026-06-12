@@ -76,7 +76,7 @@ async def update_income(
     return IncomeRead.model_validate(income)
 
 
-@router.delete("/{income_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{income_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def delete_income(
     income_id: int,
     db: AsyncSession = Depends(get_db),

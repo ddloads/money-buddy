@@ -1,0 +1,43 @@
+name: Deploy to Portainer
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Redeploy stack with current commit hash
+        env:
+          PORTAINER_URL: https://portainer.ddsplayground.com
+          PORTAINER_TOKEN: ${{ secrets.PORTAINER_TOKEN }}
+          STACK_ID: 48
+          ENDPOINT_ID: 3
+          GIT_COMMIT: ${{ github.sha }}
+        run: |
+          # Fetch current stack env vars so we preserve everything
+          STACK=$(curl -sf \
+            -H "X-API-Key: $PORTAINER_TOKEN" \
+            "$PORTAINER_URL/api/stacks/$STACK_ID")
+
+          # Merge: keep all existing vars, update/add GIT_COMMIT
+          UPDATED_ENV=$(echo "$STACK" | python3 - <<'EOF'
+import sys, json, os
+stack = json.load(sys.stdin)
+env = stack.get("Env", [])
+env = [e for e in env if e["name"] != "GIT_COMMIT"]
+env.append({"name": "GIT_COMMIT", "value": os.environ["GIT_COMMIT"]})
+print(json.dumps(env))
+EOF
+          )
+
+          # Trigger git redeploy with the updated env
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            -H "X-API-Key: $PORTAINER_TOKEN" \
+            -H "Content-Type: application/json" \
+            "$PORTAINER_URL/api/stacks/$STACK_ID/git/redeploy?endpointId=$ENDPOINT_ID" \
+            -d "{\"env\": $UPDATED_ENV, \"pullImage\": true, \"prune\": false}")
+
+          echo "Portainer redeploy status: $HTTP_STATUS"
+          [ "$HTTP_STATUS" = "200" ] || exit 1

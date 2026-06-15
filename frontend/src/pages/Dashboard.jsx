@@ -7,6 +7,7 @@ import {
   ArrowRightIcon,
   PlusIcon,
   BanknotesIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import StatCard from '../components/StatCard'
@@ -15,6 +16,7 @@ import MonthlyChart from '../components/MonthlyChart'
 import CategoryChart from '../components/CategoryChart'
 import YearlyChart from '../components/YearlyChart'
 import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart'
+import CalendarWidget from '../components/CalendarWidget'
 import { useDashboardSummary, useUpcomingBills, useMonthlyStats, useCategoryStats, useYearlyStats, useIncomeVsExpenses } from '../hooks/useDashboard'
 import { useAuthStore } from '../store/authStore'
 import { useCurrency } from '../hooks/useCurrency'
@@ -26,6 +28,7 @@ export default function Dashboard() {
   const { user } = useAuthStore()
   const { format: formatCurrency } = useCurrency()
   const [showYearly, setShowYearly] = useState(false)
+  const [showCalendar, setShowCalendar] = useState(true)
   const [incomePeriod, setIncomePeriod] = useState('monthly')
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
   const { data: upcoming, isLoading: upcomingLoading } = useUpcomingBills(7)
@@ -260,6 +263,34 @@ export default function Dashboard() {
           </button>
         </div>
         <IncomeVsExpensesChart data={incomeVsExpenses} loading={incomeVsExpensesLoading} />
+      </div>
+
+      {/* Calendar widget */}
+      <div className="card p-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div>
+            <h2 className="section-title flex items-center gap-2">
+              <CalendarDaysIcon className="h-4 w-4 text-slate-400" />
+              Bill Calendar
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              See all your bills at a glance by due date
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCalendar((v) => !v)}
+            className="text-sm text-emerald-400 hover:underline font-medium"
+          >
+            {showCalendar ? 'Hide' : 'Show'}
+          </button>
+        </div>
+        {showCalendar ? (
+          <CalendarWidget />
+        ) : (
+          <div className="h-12 flex items-center justify-center">
+            <p className="text-sm text-slate-500">Click &quot;Show&quot; to open the calendar</p>
+          </div>
+        )}
       </div>
 
       {/* Year-over-year chart */}

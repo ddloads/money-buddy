@@ -4,6 +4,14 @@ import { normalizeUpdatedBillForCache } from '../utils/billCache'
 
 const BILLS_KEY = 'bills'
 
+export function useCalendarBills() {
+  return useQuery({
+    queryKey: [BILLS_KEY, 'calendar'],
+    queryFn: () => billsAPI.list({ page_size: 500 }).then((r) => r.data.items ?? []),
+    staleTime: 2 * 60 * 1000,
+  })
+}
+
 export function useBills(params = {}) {
   return useInfiniteQuery({
     queryKey: [BILLS_KEY, 'list', params],

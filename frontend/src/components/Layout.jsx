@@ -216,8 +216,11 @@ export default function Layout() {
           </div>
         </main>
 
-        {/* Bottom nav (mobile) */}
-        <nav className="lg:hidden flex-shrink-0 bg-midnight-900/95 backdrop-blur border-t border-white/[0.06]">
+        {/* Bottom nav (mobile) — fixed so browser chrome changes can't push it off-screen */}
+        <nav
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-midnight-900/95 backdrop-blur-md border-t border-white/[0.06]"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
           <div className="flex">
             {mainLinks.map(({ to, label, Icon }) => (
               <NavLink

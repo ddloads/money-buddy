@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useCurrency } from '../hooks/useCurrency'
 
 const FALLBACK_COLORS = [
@@ -59,31 +59,39 @@ export default function CategoryChart({ data, loading }) {
   }))
 
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <PieChart>
-        <Pie
-          data={chartData}
-          cx="50%"
-          cy="50%"
-          innerRadius={55}
-          outerRadius={85}
-          paddingAngle={2}
-          dataKey="value"
-        >
-          {chartData.map((entry, index) => (
-            <Cell
-              key={entry.name}
-              fill={entry.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length]}
+    <div>
+      <ResponsiveContainer width="100%" height={220}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius={55}
+            outerRadius={85}
+            paddingAngle={2}
+            dataKey="value"
+          >
+            {chartData.map((entry, index) => (
+              <Cell
+                key={entry.name}
+                fill={entry.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length]}
+              />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip format={format} />} />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-2">
+        {chartData.map((entry, index) => (
+          <div key={entry.name} className="flex items-center gap-1.5">
+            <span
+              className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+              style={{ backgroundColor: entry.color || FALLBACK_COLORS[index % FALLBACK_COLORS.length] }}
             />
-          ))}
-        </Pie>
-        <Tooltip content={<CustomTooltip format={format} />} />
-        <Legend
-          formatter={(value) => (
-            <span className="text-xs font-medium text-slate-400">{value}</span>
-          )}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+            <span className="text-xs font-medium text-slate-400">{entry.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }

@@ -1,13 +1,14 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { billsAPI } from '../utils/api'
 import { normalizeUpdatedBillForCache } from '../utils/billCache'
+import { getBillItems } from '../utils/billList'
 
 const BILLS_KEY = 'bills'
 
 export function useCalendarBills() {
   return useQuery({
     queryKey: [BILLS_KEY, 'calendar'],
-    queryFn: () => billsAPI.list({ page_size: 500 }).then((r) => r.data.items ?? []),
+    queryFn: () => billsAPI.list({ page: 1, page_size: 500 }).then((r) => getBillItems(r.data)),
     staleTime: 2 * 60 * 1000,
   })
 }

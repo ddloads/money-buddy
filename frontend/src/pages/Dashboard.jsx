@@ -20,6 +20,7 @@ import {
   ArrowRightIcon,
   PlusIcon,
   BanknotesIcon,
+  CalendarDaysIcon,
   Cog6ToothIcon,
   EyeIcon,
   ArrowPathIcon,
@@ -32,6 +33,7 @@ import MonthlyChart from '../components/MonthlyChart'
 import CategoryChart from '../components/CategoryChart'
 import YearlyChart from '../components/YearlyChart'
 import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart'
+import CalendarWidget from '../components/CalendarWidget'
 import DashboardWidget from '../components/DashboardWidget'
 import {
   useDashboardSummary,
@@ -288,6 +290,22 @@ export default function Dashboard() {
               </button>
             </div>
             <IncomeVsExpensesChart data={incomeVsExpenses} loading={incomeVsExpensesLoading} />
+          </div>
+        )
+
+      case 'calendar':
+        return (
+          <div className="card p-5">
+            <div className="mb-4">
+              <h2 className="section-title flex items-center gap-2">
+                <CalendarDaysIcon className="h-4 w-4 text-slate-400" />
+                Bill Calendar
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                See all your bills at a glance by due date
+              </p>
+            </div>
+            <CalendarWidget />
           </div>
         )
 

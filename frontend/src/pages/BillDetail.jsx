@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeftIcon,
   TrashIcon,
@@ -164,7 +164,11 @@ function PayoffTab({ payoff, loading, error, format }) {
 export default function BillDetail({ isNew = false }) {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const fileRef = useRef()
+  const newBillDefaults = isNew && searchParams.get('due_date')
+    ? { due_date: searchParams.get('due_date') }
+    : undefined
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showPayDialog, setShowPayDialog] = useState(false)
   const [activeTab, setActiveTab] = useState('details') // details | receipt | history | payoff
@@ -332,7 +336,7 @@ export default function BillDetail({ isNew = false }) {
             </div>
           )}
           <BillForm
-            defaultValues={isNew ? undefined : bill}
+            defaultValues={isNew ? newBillDefaults : bill}
             onSubmit={handleSubmit}
             isLoading={createBill.isPending || updateBill.isPending}
             submitLabel={isNew ? 'Create Bill' : 'Save Changes'}

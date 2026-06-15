@@ -9,6 +9,7 @@ export const DEFAULT_WIDGETS = [
   { id: 'monthly-chart', title: 'Monthly Overview' },
   { id: 'category-chart', title: 'Spending by Category' },
   { id: 'income-vs-expenses', title: 'Income vs Expenses' },
+  { id: 'calendar', title: 'Bill Calendar' },
   { id: 'yearly-chart', title: 'Year-over-Year' },
 ]
 

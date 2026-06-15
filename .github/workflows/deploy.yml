@@ -18,9 +18,18 @@ jobs:
         run: |
           set -e
 
-          # Fetch stack config and compose file
-          curl -sf -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID" > /tmp/stack.json
-          curl -sf -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID/file" > /tmp/file_resp.json
+          # Fetch stack config
+          STACK_STATUS=$(curl -s -o /tmp/stack.json -w "%{http_code}" \
+            -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID")
+          echo "GET stack → HTTP $STACK_STATUS"
+          [ "$STACK_STATUS" = "200" ] || { echo "ERROR fetching stack:"; cat /tmp/stack.json; exit 1; }
+
+          # Fetch compose file
+          FILE_STATUS=$(curl -s -o /tmp/file_resp.json -w "%{http_code}" \
+            -H "X-API-Key: $PORTAINER_TOKEN" "$PORTAINER_URL/api/stacks/$STACK_ID/file")
+          echo "GET file → HTTP $FILE_STATUS"
+          [ "$FILE_STATUS" = "200" ] || { echo "ERROR fetching stack file:"; cat /tmp/file_resp.json; exit 1; }
+
           echo "$GIT_COMMIT" > /tmp/gc.txt
 
           # Extract compose file content

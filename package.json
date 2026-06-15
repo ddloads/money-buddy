@@ -1,0 +1,11 @@
+{
+  "name": "money-buddy",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan.bold,green.bold\" -p \"[{name}]\" \"powershell -ExecutionPolicy Bypass -File scripts/start-backend.ps1\" \"cd frontend && npm run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

@@ -8,7 +8,19 @@ const BILLS_KEY = 'bills'
 export function useCalendarBills() {
   return useQuery({
     queryKey: [BILLS_KEY, 'calendar'],
-    queryFn: () => billsAPI.list({ page: 1, page_size: 500 }).then((r) => getBillItems(r.data)),
+    queryFn: async () => {
+      const pageSize = 100
+      const first = await billsAPI.list({ page: 1, page_size: pageSize })
+      const firstItems = getBillItems(first.data)
+      const totalPages = first.data?.pages ?? 1
+      if (totalPages <= 1) return firstItems
+      const rest = await Promise.all(
+        Array.from({ length: Math.min(totalPages - 1, 9) }, (_, i) =>
+          billsAPI.list({ page: i + 2, page_size: pageSize }).then((r) => getBillItems(r.data))
+        )
+      )
+      return firstItems.concat(...rest)
+    },
     staleTime: 2 * 60 * 1000,
   })
 }

@@ -13,16 +13,27 @@ import {
   WalletIcon,
   ChartPieIcon,
   FlagIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../store/authStore'
 import { useAuth } from '../hooks/useAuth'
 import PlaceholderTag from './PlaceholderTag'
 
-const mainLinks = [
+const sidebarLinks = [
   { to: '/dashboard', label: 'Dashboard', Icon: HomeIcon },
   { to: '/bills', label: 'Bills', Icon: DocumentTextIcon },
+  { to: '/calendar', label: 'Calendar', Icon: CalendarDaysIcon },
   { to: '/income', label: 'Income', Icon: BanknotesIcon },
   { to: '/categories', label: 'Categories', Icon: TagIcon },
+  { to: '/settings', label: 'Settings', Icon: Cog6ToothIcon },
+]
+
+// Mobile bottom nav — Calendar replaces Categories (Categories still in sidebar)
+const mobileNavLinks = [
+  { to: '/dashboard', label: 'Dashboard', Icon: HomeIcon },
+  { to: '/bills', label: 'Bills', Icon: DocumentTextIcon },
+  { to: '/calendar', label: 'Calendar', Icon: CalendarDaysIcon },
+  { to: '/income', label: 'Income', Icon: BanknotesIcon },
   { to: '/settings', label: 'Settings', Icon: Cog6ToothIcon },
 ]
 
@@ -141,7 +152,7 @@ export default function Layout() {
         <nav className="flex-1 sidebar-scroll px-4 pb-4">
           <SectionLabel>Menu</SectionLabel>
           <div className="space-y-1">
-            {mainLinks.map(({ to, label, Icon }) => (
+            {sidebarLinks.map(({ to, label, Icon }) => (
               <NavItem key={to} to={to} label={label} Icon={Icon} onClick={closeSidebar} />
             ))}
           </div>
@@ -222,7 +233,7 @@ export default function Layout() {
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           <div className="flex">
-            {mainLinks.map(({ to, label, Icon }) => (
+            {mobileNavLinks.map(({ to, label, Icon }) => (
               <NavLink
                 key={to}
                 to={to}

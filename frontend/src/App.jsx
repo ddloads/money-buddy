@@ -7,6 +7,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Bills from './pages/Bills'
 import BillDetail from './pages/BillDetail'
+import Calendar from './pages/Calendar'
 import Categories from './pages/Categories'
 import Income from './pages/Income'
 import Settings from './pages/Settings'
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="bills" element={<Bills />} />
         <Route path="bills/new" element={<BillDetail isNew />} />
         <Route path="bills/:id" element={<BillDetail />} />
+        <Route path="calendar" element={<Calendar />} />
         <Route path="income" element={<Income />} />
         <Route path="categories" element={<Categories />} />
         <Route path="settings" element={<Settings />} />

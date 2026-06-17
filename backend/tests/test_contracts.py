@@ -22,6 +22,48 @@ def test_dashboard_split_endpoints_exist_for_frontend_contract():
     assert "/dashboard/monthly" in paths
 
 
+def test_dashboard_paycheck_and_debt_endpoints_exist_for_frontend_contract():
+    paths = {route.path for route in app.routes}
+
+    assert "/dashboard/paycheck-plan" in paths
+    assert "/dashboard/debt" in paths
+
+
+def test_paycheck_planner_helpers_bucket_paydays_correctly():
+    from datetime import date
+
+    from app.api.dashboard import _paydays_in_window, _period_boundaries
+    from app.models.income import IncomeFrequency
+
+    today = date(2026, 6, 17)
+    bounds = _period_boundaries(date(2026, 1, 2), IncomeFrequency.BIWEEKLY, today, 3)
+
+    # The current period must bracket today.
+    assert bounds[0] <= today < bounds[1]
+    # A biweekly source pays exactly once per biweekly period.
+    for i in range(3):
+        assert _paydays_in_window(
+            date(2026, 1, 2), IncomeFrequency.BIWEEKLY, bounds[i], bounds[i + 1]
+        ) == 1
+    # A monthly source pays at most once inside a biweekly window.
+    assert _paydays_in_window(
+        date(2026, 6, 1), IncomeFrequency.MONTHLY, bounds[0], bounds[1]
+    ) <= 1
+
+
+def test_amortize_helper_handles_payable_and_unpayable_balances():
+    from app.services.payoff import amortize
+
+    payable = amortize(1000.0, 100.0, 12.0)
+    assert payable["payable"] is True
+    assert payable["months_remaining"] and payable["months_remaining"] > 0
+
+    # A payment smaller than the monthly interest can never clear the balance.
+    unpayable = amortize(1000.0, 5.0, 24.0)
+    assert unpayable["payable"] is False
+    assert unpayable["months_remaining"] is None
+
+
 def test_token_response_contains_user_for_frontend_auth_store():
     fields = set(Token.model_fields)
 

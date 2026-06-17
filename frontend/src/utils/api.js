@@ -94,6 +94,8 @@ export const dashboardAPI = {
   categoryStats: () => api.get('/dashboard/categories'),
   yearlyStats: () => api.get('/dashboard/yearly'),
   incomeVsExpenses: (months = 6) => api.get('/dashboard/income-vs-expenses', { params: { months } }),
+  paycheckPlan: (periods = 3) => api.get('/dashboard/paycheck-plan', { params: { periods } }),
+  debt: () => api.get('/dashboard/debt'),
 }
 
 // ─── Income ────────────────────────────────────────────────────────────────

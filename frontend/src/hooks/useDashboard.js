@@ -48,3 +48,19 @@ export function useYearlyStats() {
     staleTime: 1000 * 60 * 10,
   })
 }
+
+export function usePaycheckPlan(periods = 3) {
+  return useQuery({
+    queryKey: ['dashboard', 'paycheck-plan', periods],
+    queryFn: () => dashboardAPI.paycheckPlan(periods).then((r) => r.data),
+    staleTime: 1000 * 60 * 2,
+  })
+}
+
+export function useDebtOverview() {
+  return useQuery({
+    queryKey: ['dashboard', 'debt'],
+    queryFn: () => dashboardAPI.debt().then((r) => r.data),
+    staleTime: 1000 * 60 * 2,
+  })
+}

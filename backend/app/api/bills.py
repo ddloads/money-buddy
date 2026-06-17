@@ -7,7 +7,7 @@ import logging
 import math
 import os
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Optional
 
@@ -26,6 +26,7 @@ from app.models.payment import Payment
 from app.models.user import User
 from app.schemas.bill import BillCreate, BillListResponse, BillRead, BillUpdate
 from app.schemas.payment import PaymentRead
+from app.services.payoff import amortize
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -469,12 +470,6 @@ async def upload_receipt(
     return bill
 
 
-_MONTH_NAMES = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-]
-
-
 @router.get("/{bill_id}/payoff", response_model=dict[str, Any])
 async def get_payoff_estimate(
     bill_id: int,
@@ -493,62 +488,21 @@ async def get_payoff_estimate(
     balance = float(bill.remaining_balance)
     payment = float(bill.amount)
     annual_rate = float(bill.interest_rate or 0)
-    monthly_rate = annual_rate / 100 / 12
+
+    result = amortize(balance, payment, annual_rate)
 
     # Guard: payment must exceed monthly interest to ever pay off
-    if monthly_rate > 0 and payment <= balance * monthly_rate:
+    if not result["payable"]:
+        monthly_interest = balance * (annual_rate / 100 / 12)
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=(
                 f"Monthly payment ({payment:.2f}) does not exceed monthly interest "
-                f"({balance * monthly_rate:.2f}). The balance will never be paid off at "
+                f"({monthly_interest:.2f}). The balance will never be paid off at "
                 f"this payment amount."
             ),
         )
 
-    today = date.today()
-    schedule: list[dict[str, Any]] = []
-    total_interest = 0.0
-    total_paid = 0.0
-    MAX_MONTHS = 360  # 30-year cap
-
-    for offset in range(1, MAX_MONTHS + 1):
-        interest = balance * monthly_rate
-        actual_payment = min(payment, balance + interest)
-        principal = actual_payment - interest
-        balance = balance - principal
-        if balance < 0.005:
-            balance = 0.0
-
-        total_interest += interest
-        total_paid += actual_payment
-
-        m_idx = (today.month - 1 + offset) % 12
-        y = today.year + (today.month - 1 + offset) // 12
-
-        schedule.append({
-            "month": offset,
-            "year": y,
-            "month_name": _MONTH_NAMES[m_idx],
-            "payment": round(actual_payment, 2),
-            "principal": round(principal, 2),
-            "interest": round(interest, 2),
-            "balance": round(balance, 2),
-        })
-
-        if balance == 0.0:
-            break
-
-    last = schedule[-1]
-    payoff_date = f"{last['year']}-{last['month_name']}"
-
-    return {
-        "remaining_balance": float(bill.remaining_balance),
-        "monthly_payment": payment,
-        "interest_rate": annual_rate,
-        "months_remaining": len(schedule),
-        "estimated_payoff_date": payoff_date,
-        "total_interest": round(total_interest, 2),
-        "total_paid": round(total_paid, 2),
-        "schedule": schedule,
-    }
+    # Drop the internal flag for backward-compatible response shape.
+    result.pop("payable", None)
+    return result

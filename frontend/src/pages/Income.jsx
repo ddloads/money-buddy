@@ -1,15 +1,19 @@
 import { useState } from 'react'
+import { differenceInCalendarDays } from 'date-fns'
 import {
   PlusIcon,
   PencilSquareIcon,
   TrashIcon,
   BanknotesIcon,
   CheckCircleIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
 import IncomeForm from '../components/IncomeForm'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { useIncomes, useCreateIncome, useUpdateIncome, useDeleteIncome } from '../hooks/useIncome'
 import { useCurrency } from '../hooks/useCurrency'
+import { formatBillDate } from '../utils/billDates'
+import { nextPayday, soonestPayday } from '../utils/payday'
 
 const FREQUENCY_LABELS = {
   weekly: 'Weekly',
@@ -27,6 +31,15 @@ const FREQ_MONTHLY = {
   quarterly: 1 / 3,
   yearly: 1 / 12,
   one_time: 0,
+}
+
+function relativeDay(date) {
+  const days = differenceInCalendarDays(date, new Date())
+  if (days <= 0) return 'today'
+  if (days === 1) return 'tomorrow'
+  if (days < 7) return `in ${days} days`
+  if (days < 14) return 'in 1 week'
+  return `in ${Math.round(days / 7)} weeks`
 }
 
 function IncomeModal({ income, onClose }) {
@@ -95,9 +108,10 @@ export default function Income() {
     setEditingIncome(null)
   }
 
-  const totalMonthlyIncome = (incomes || [])
-    .filter((i) => i.is_active)
+  const activeIncomes = (incomes || []).filter((i) => i.is_active)
+  const totalMonthlyIncome = activeIncomes
     .reduce((sum, i) => sum + Number(i.amount) * (FREQ_MONTHLY[i.frequency] || 0), 0)
+  const upcoming = soonestPayday(activeIncomes)
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -118,17 +132,36 @@ export default function Income() {
       {/* Summary card */}
       <div className="relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-blue-600 to-indigo-700 shadow-glow-blue">
         <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-white/15 rounded-xl">
-            <BanknotesIcon className="h-6 w-6 text-white" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-white/15 rounded-xl">
+              <BanknotesIcon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <p className="text-blue-100 text-xs font-medium uppercase tracking-wider">Total Monthly Income</p>
+              <p className="text-2xl font-bold text-white mt-0.5">{format(totalMonthlyIncome)}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-blue-100 text-xs font-medium uppercase tracking-wider">Total Monthly Income</p>
-            <p className="text-2xl font-bold text-white mt-0.5">{format(totalMonthlyIncome)}</p>
-          </div>
+
+          {/* Next expected paycheck */}
+          {upcoming && (
+            <div className="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3 sm:text-right">
+              <CalendarDaysIcon className="h-6 w-6 text-blue-100 sm:order-2 flex-shrink-0" />
+              <div className="sm:order-1">
+                <p className="text-blue-100 text-xs font-medium uppercase tracking-wider">Next Paycheck</p>
+                <p className="text-base font-bold text-white mt-0.5">
+                  {formatBillDate(upcoming.date, 'EEE, MMM d')}
+                  <span className="text-blue-200 font-normal"> · {relativeDay(upcoming.date)}</span>
+                </p>
+                <p className="text-blue-200 text-xs mt-0.5 truncate">
+                  {upcoming.income.name} · {format(upcoming.income.amount)}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
         <p className="text-blue-200 text-xs mt-3">
-          Based on {(incomes || []).filter((i) => i.is_active).length} active source(s) converted to monthly equivalent.
+          Based on {activeIncomes.length} active source(s) converted to monthly equivalent.
         </p>
       </div>
 
@@ -158,6 +191,7 @@ export default function Income() {
         <div className="space-y-3">
           {incomes.map((income) => {
             const monthly = Number(income.amount) * (FREQ_MONTHLY[income.frequency] || 0)
+            const payday = nextPayday(income)
             return (
               <div key={income.id} className={`card-interactive p-4 flex items-start gap-4 ${!income.is_active ? 'opacity-60' : ''}`}>
                 <div className="p-2.5 bg-blue-500/15 rounded-xl flex-shrink-0">
@@ -193,6 +227,15 @@ export default function Income() {
                           </span>
                         )}
                       </div>
+                      {payday && (
+                        <div className="mt-1.5 flex items-center gap-1.5 text-xs text-emerald-400">
+                          <CalendarDaysIcon className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span>
+                            Next paycheck {formatBillDate(payday, 'EEE, MMM d')}
+                            <span className="text-slate-500"> · {relativeDay(payday)}</span>
+                          </span>
+                        </div>
+                      )}
                       {income.notes && (
                         <p className="text-xs text-slate-500 mt-1 truncate">{income.notes}</p>
                       )}

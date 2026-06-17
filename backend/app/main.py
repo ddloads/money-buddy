@@ -11,7 +11,21 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, bills, categories, dashboard, income, templates, dev
+from app.api import (
+    accounts,
+    auth,
+    bills,
+    budget,
+    categories,
+    category_rules,
+    dashboard,
+    goals,
+    income,
+    reports,
+    templates,
+    transactions,
+    dev,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +61,7 @@ async def lifespan(app: FastAPI):
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS default_categories_seeded_at TIMESTAMPTZ",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()",
                 "ALTER TABLE categories ADD COLUMN IF NOT EXISTS monthly_budget NUMERIC(12,2)",
+                "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS bill_id BIGINT REFERENCES bills(id) ON DELETE SET NULL",
             ]
             for stmt in _pg_migrations:
                 await conn.execute(text(stmt))
@@ -91,8 +106,14 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
     app.include_router(bills.router, prefix="/bills", tags=["Bills"])
     app.include_router(categories.router, prefix="/categories", tags=["Categories"])
+    app.include_router(category_rules.router, prefix="/category-rules", tags=["Category Rules"])
+    app.include_router(budget.router, prefix="/budget", tags=["Budget"])
     app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
     app.include_router(income.router, prefix="/income", tags=["Income"])
+    app.include_router(accounts.router, prefix="/accounts", tags=["Accounts"])
+    app.include_router(transactions.router, prefix="/transactions", tags=["Transactions"])
+    app.include_router(reports.router, prefix="/reports", tags=["Reports"])
+    app.include_router(goals.router, prefix="/goals", tags=["Goals"])
     app.include_router(templates.router, prefix="/templates", tags=["Templates"])
     app.include_router(dev.router, prefix="/dev", tags=["Dev"])
 

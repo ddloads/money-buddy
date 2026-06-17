@@ -98,6 +98,73 @@ export const dashboardAPI = {
   debt: () => api.get('/dashboard/debt'),
 }
 
+// ─── Budget ────────────────────────────────────────────────────────────────
+
+export const budgetAPI = {
+  get: (year, month) => api.get('/budget', { params: { year, month } }),
+}
+
+// ─── Accounts ──────────────────────────────────────────────────────────────
+
+export const accountsAPI = {
+  list: () => api.get('/accounts'),
+  netWorth: () => api.get('/accounts/net-worth'),
+  get: (id) => api.get(`/accounts/${id}`),
+  create: (data) => api.post('/accounts', data),
+  update: (id, data) => api.put(`/accounts/${id}`, data),
+  delete: (id) => api.delete(`/accounts/${id}`),
+}
+
+// ─── Transactions ────────────────────────────────────────────────────────────
+
+export const transactionsAPI = {
+  list: (params) => api.get('/transactions', { params }),
+  get: (id) => api.get(`/transactions/${id}`),
+  create: (data) => api.post('/transactions', data),
+  update: (id, data) => api.put(`/transactions/${id}`, data),
+  delete: (id) => api.delete(`/transactions/${id}`),
+  previewImport: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/transactions/import/preview', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  import: (accountId, file) => {
+    const formData = new FormData()
+    formData.append('account_id', accountId)
+    formData.append('file', file)
+    return api.post('/transactions/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+}
+
+// ─── Goals ───────────────────────────────────────────────────────────────────
+
+export const goalsAPI = {
+  list: () => api.get('/goals'),
+  create: (data) => api.post('/goals', data),
+  update: (id, data) => api.put(`/goals/${id}`, data),
+  contribute: (id, amount) => api.post(`/goals/${id}/contribute`, { amount }),
+  delete: (id) => api.delete(`/goals/${id}`),
+}
+
+// ─── Reports ─────────────────────────────────────────────────────────────────
+
+export const reportsAPI = {
+  get: (months = 6) => api.get('/reports', { params: { months } }),
+}
+
+// ─── Category Rules (auto-categorization) ────────────────────────────────────
+
+export const categoryRulesAPI = {
+  list: () => api.get('/category-rules'),
+  create: (data) => api.post('/category-rules', data),
+  delete: (id) => api.delete(`/category-rules/${id}`),
+  apply: () => api.post('/category-rules/apply'),
+}
+
 // ─── Income ────────────────────────────────────────────────────────────────
 
 export const incomeAPI = {

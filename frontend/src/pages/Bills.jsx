@@ -9,6 +9,7 @@ import {
   FunnelIcon,
 } from '@heroicons/react/24/outline'
 import BillCard from '../components/BillCard'
+import PayBillModal from '../components/PayBillModal'
 import { useBills, useMarkBillPaid } from '../hooks/useBills'
 import { useCategories } from '../hooks/useCategories'
 import { billsAPI } from '../utils/api'
@@ -37,6 +38,7 @@ export default function Bills() {
   const [showSort, setShowSort] = useState(false)
   const [categoryId, setCategoryId] = useState('')
   const [exporting, setExporting] = useState(false)
+  const [payingBill, setPayingBill] = useState(null)
 
   const { data: categories = [] } = useCategories()
 
@@ -62,7 +64,14 @@ export default function Bills() {
   const totalBills = data?.pages?.[0]?.total ?? 0
 
   const handleMarkPaid = (bill) => {
-    markPaid.mutate({ id: bill.id, data: { paid_date: new Date().toISOString().split('T')[0] } })
+    setPayingBill(bill)
+  }
+
+  const confirmPay = (accountId) => {
+    markPaid.mutate(
+      { id: payingBill.id, data: accountId ? { account_id: accountId } : {} },
+      { onSuccess: () => setPayingBill(null) }
+    )
   }
 
   const handleExport = async () => {
@@ -281,6 +290,13 @@ export default function Bills() {
           )}
         </>
       )}
+
+      <PayBillModal
+        bill={payingBill}
+        onConfirm={confirmPay}
+        onCancel={() => setPayingBill(null)}
+        loading={markPaid.isPending}
+      />
     </div>
   )
 }

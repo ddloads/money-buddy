@@ -14,34 +14,33 @@ import {
   ChartPieIcon,
   FlagIcon,
   CalendarDaysIcon,
+  BuildingLibraryIcon,
+  ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../store/authStore'
 import { useAuth } from '../hooks/useAuth'
-import PlaceholderTag from './PlaceholderTag'
 
 const sidebarLinks = [
   { to: '/dashboard', label: 'Dashboard', Icon: HomeIcon },
+  { to: '/accounts', label: 'Accounts', Icon: BuildingLibraryIcon },
+  { to: '/transactions', label: 'Transactions', Icon: ArrowsRightLeftIcon },
   { to: '/bills', label: 'Bills', Icon: DocumentTextIcon },
   { to: '/calendar', label: 'Calendar', Icon: CalendarDaysIcon },
   { to: '/income', label: 'Income', Icon: BanknotesIcon },
+  { to: '/budget', label: 'Budget', Icon: WalletIcon },
+  { to: '/reports', label: 'Reports', Icon: ChartPieIcon },
+  { to: '/goals', label: 'Goals', Icon: FlagIcon },
   { to: '/categories', label: 'Categories', Icon: TagIcon },
   { to: '/settings', label: 'Settings', Icon: Cog6ToothIcon },
 ]
 
-// Mobile bottom nav — Calendar replaces Categories (Categories still in sidebar)
+// Mobile bottom nav — a focused subset; the rest live in the slide-out sidebar
 const mobileNavLinks = [
   { to: '/dashboard', label: 'Dashboard', Icon: HomeIcon },
+  { to: '/accounts', label: 'Accounts', Icon: BuildingLibraryIcon },
   { to: '/bills', label: 'Bills', Icon: DocumentTextIcon },
-  { to: '/calendar', label: 'Calendar', Icon: CalendarDaysIcon },
-  { to: '/income', label: 'Income', Icon: BanknotesIcon },
+  { to: '/budget', label: 'Budget', Icon: WalletIcon },
   { to: '/settings', label: 'Settings', Icon: Cog6ToothIcon },
-]
-
-// Aspirational features — visible in the nav but not built yet
-const placeholderLinks = [
-  { label: 'Budget', Icon: WalletIcon },
-  { label: 'Reports', Icon: ChartPieIcon },
-  { label: 'Goals', Icon: FlagIcon },
 ]
 
 function NavItem({ to, label, Icon, onClick }) {
@@ -54,20 +53,6 @@ function NavItem({ to, label, Icon, onClick }) {
       <Icon className="h-5 w-5 flex-shrink-0" />
       <span>{label}</span>
     </NavLink>
-  )
-}
-
-function PlaceholderNavItem({ label, Icon }) {
-  return (
-    <button
-      type="button"
-      className="nav-item w-full cursor-default opacity-60 hover:bg-transparent hover:text-slate-400"
-      title="Placeholder — not functional yet"
-    >
-      <Icon className="h-5 w-5 flex-shrink-0" />
-      <span className="flex-1 text-left">{label}</span>
-      <PlaceholderTag />
-    </button>
   )
 }
 
@@ -154,13 +139,6 @@ export default function Layout() {
           <div className="space-y-1">
             {sidebarLinks.map(({ to, label, Icon }) => (
               <NavItem key={to} to={to} label={label} Icon={Icon} onClick={closeSidebar} />
-            ))}
-          </div>
-
-          <SectionLabel>Coming Soon</SectionLabel>
-          <div className="space-y-1">
-            {placeholderLinks.map(({ label, Icon }) => (
-              <PlaceholderNavItem key={label} label={label} Icon={Icon} />
             ))}
           </div>
         </nav>

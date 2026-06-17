@@ -140,6 +140,16 @@ export const transactionsAPI = {
   },
 }
 
+// ─── Goals ───────────────────────────────────────────────────────────────────
+
+export const goalsAPI = {
+  list: () => api.get('/goals'),
+  create: (data) => api.post('/goals', data),
+  update: (id, data) => api.put(`/goals/${id}`, data),
+  contribute: (id, amount) => api.post(`/goals/${id}/contribute`, { amount }),
+  delete: (id) => api.delete(`/goals/${id}`),
+}
+
 // ─── Reports ─────────────────────────────────────────────────────────────────
 
 export const reportsAPI = {

@@ -105,6 +105,7 @@ Browser → nginx (:3107 → :80)
 | `api/budget.py` | Monthly budget vs. actual: `GET /budget?year=&month=`. Budgets are the recurring `monthly_budget` on each category; "spent" is bills due in the month. |
 | `api/dashboard.py` | Split endpoints: `/summary`, `/upcoming`, `/monthly`, `/categories`, `/yearly`, `/income-vs-expenses`, `/paycheck-plan`, `/debt` |
 | `api/reports.py` | Transaction analytics: `GET /reports?months=` → cash flow, net-worth trend, spending by category, totals |
+| `api/goals.py` | Savings & debt-payoff goals CRUD + `POST /goals/{id}/contribute`; progress computed from a linked account or manual `current_amount` |
 | `api/income.py` | Income source CRUD |
 | `api/templates.py` | Bill template CRUD |
 | `api/accounts.py` | Account CRUD + computed balances + `GET /accounts/net-worth` summary |
@@ -120,7 +121,7 @@ All route handlers use `async def` with `AsyncSession`. Pattern: `await db.execu
 
 Every protected endpoint takes `current_user: User = Depends(get_current_user)` as the last parameter. User data is always scoped — never query without `where(Model.user_id == current_user.id)`.
 
-Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/category-rules`, `/budget`, `/dashboard`, `/income`, `/accounts`, `/transactions`, `/reports`, `/templates`) — route decorators use paths without that prefix.
+Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/category-rules`, `/budget`, `/dashboard`, `/income`, `/accounts`, `/transactions`, `/reports`, `/goals`, `/templates`) — route decorators use paths without that prefix.
 
 ### Frontend layout (`frontend/src/`)
 
@@ -167,6 +168,8 @@ Additional auth endpoints: `PUT /auth/me` (update profile), `PUT /auth/me/passwo
 **CategoryRule:** `id, user_id, keyword, category_id, created_at`. If a transaction description contains `keyword` (case-insensitive), it's assigned `category_id`. Applied on CSV import, on manual create when no category is given, and on demand via `POST /category-rules/apply`. Longer keywords match first.
 
 Paying a bill (`POST /bills/{id}/pay`) accepts an optional `account_id`; when set, a matching expense transaction is recorded against that account and linked via `Transaction.bill_id` (deleted again if the bill is un-paid).
+
+**Goal:** `id, user_id, name, type (enum: savings/debt), target_amount (Numeric 14,2), current_amount (Numeric 14,2, manual progress), target_date, account_id (optional link), notes, created_at, updated_at`. Progress is computed in the API: linked savings → account balance; linked debt → amount paid down (target − amount owed); otherwise `current_amount`. `goals` is a new table created by `create_all`.
 
 **BillTemplate:** `id, user_id, name, amount, category_id, notes, is_recurring, recurrence_interval`
 

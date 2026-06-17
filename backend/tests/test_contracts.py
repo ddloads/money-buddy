@@ -66,6 +66,14 @@ def test_reports_endpoint_exists_for_frontend_contract():
     assert ("/reports", ("GET",)) in route_index
 
 
+def test_goals_endpoints_exist_for_frontend_contract():
+    paths = {route.path for route in app.routes}
+
+    assert "/goals" in paths
+    assert "/goals/{goal_id}" in paths
+    assert "/goals/{goal_id}/contribute" in paths
+
+
 def test_bill_pay_accepts_account_for_reconciliation():
     from app.schemas.bill import BillPayRequest
 

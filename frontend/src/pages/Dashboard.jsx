@@ -26,6 +26,7 @@ import {
   ArrowPathIcon,
   EyeSlashIcon,
   ScaleIcon,
+  FlagIcon,
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import StatCard from '../components/StatCard'
@@ -49,6 +50,7 @@ import {
   useDebtOverview,
 } from '../hooks/useDashboard'
 import { useNetWorth } from '../hooks/useAccounts'
+import { useGoals } from '../hooks/useGoals'
 import { useAuthStore } from '../store/authStore'
 import { useCurrency } from '../hooks/useCurrency'
 import { useDashboardStore, DEFAULT_WIDGETS } from '../store/dashboardStore'
@@ -74,6 +76,7 @@ export default function Dashboard() {
   const { data: paycheckPlan, isLoading: paycheckLoading } = usePaycheckPlan(settings.paycheckPeriods)
   const { data: debt, isLoading: debtLoading } = useDebtOverview()
   const { data: netWorth, isLoading: netWorthLoading } = useNetWorth()
+  const { data: goals, isLoading: goalsLoading } = useGoals()
 
   const leftoverThisCheck = paycheckPlan?.periods?.[0]?.leftover ?? null
 
@@ -233,6 +236,67 @@ export default function Dashboard() {
             )}
           </div>
         )
+
+      case 'goals': {
+        const activeGoals = (goals || []).filter((g) => !g.completed).slice(0, 4)
+        return (
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="section-title flex items-center gap-2">
+                <FlagIcon className="h-4 w-4 text-slate-400" />
+                Goals
+              </h2>
+              <button
+                onClick={() => navigate('/goals')}
+                className="text-sm text-emerald-400 hover:underline flex items-center gap-1 font-medium"
+              >
+                View all
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            {goalsLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => <div key={i} className="skeleton h-10 rounded-lg" />)}
+              </div>
+            ) : activeGoals.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-sm font-medium text-slate-200 mb-1">No active goals</p>
+                <p className="text-xs text-slate-500 mb-3">Set a savings or debt-payoff goal to track progress.</p>
+                <button onClick={() => navigate('/goals')} className="btn-secondary text-sm gap-1.5">
+                  Add a goal
+                  <ArrowRightIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {activeGoals.map((g) => (
+                  <button
+                    key={g.id}
+                    onClick={() => navigate('/goals')}
+                    className="w-full text-left"
+                  >
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="text-slate-200 font-medium truncate flex items-center gap-1.5">
+                        <span>{g.type === 'debt' ? '💳' : '🐖'}</span>
+                        {g.name}
+                      </span>
+                      <span className="text-slate-500 flex-shrink-0">
+                        {formatCurrency(g.saved)} / {formatCurrency(g.target_amount)}
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                      <div
+                        className={`h-full rounded-full bg-gradient-to-r ${g.type === 'debt' ? 'from-rose-500 to-orange-400' : 'from-blue-500 to-indigo-400'}`}
+                        style={{ width: `${g.progress_pct}%` }}
+                      />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      }
 
       case 'paycheck-plan':
         return (

@@ -45,6 +45,9 @@ class User(Base):
     transactions: Mapped[List["Transaction"]] = relationship(  # noqa: F821
         "Transaction", back_populates="user", cascade="all, delete-orphan"
     )
+    goals: Mapped[List["Goal"]] = relationship(  # noqa: F821
+        "Goal", back_populates="user", cascade="all, delete-orphan"
+    )
 
     @property
     def first_name(self) -> Optional[str]:

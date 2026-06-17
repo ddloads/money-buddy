@@ -19,6 +19,7 @@ from app.api import (
     categories,
     category_rules,
     dashboard,
+    goals,
     income,
     reports,
     templates,
@@ -112,6 +113,7 @@ def create_app() -> FastAPI:
     app.include_router(accounts.router, prefix="/accounts", tags=["Accounts"])
     app.include_router(transactions.router, prefix="/transactions", tags=["Transactions"])
     app.include_router(reports.router, prefix="/reports", tags=["Reports"])
+    app.include_router(goals.router, prefix="/goals", tags=["Goals"])
     app.include_router(templates.router, prefix="/templates", tags=["Templates"])
     app.include_router(dev.router, prefix="/dev", tags=["Dev"])
 

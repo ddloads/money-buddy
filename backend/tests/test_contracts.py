@@ -29,6 +29,16 @@ def test_dashboard_paycheck_and_debt_endpoints_exist_for_frontend_contract():
     assert "/dashboard/debt" in paths
 
 
+def test_budget_endpoint_exists_for_frontend_contract():
+    route_index = {
+        (route.path, tuple(sorted(route.methods))): route
+        for route in app.routes
+        if getattr(route, "methods", None)
+    }
+
+    assert ("/budget", ("GET",)) in route_index
+
+
 def test_paycheck_planner_helpers_bucket_paydays_correctly():
     from datetime import date
 

@@ -24,22 +24,22 @@ const sidebarLinks = [
   { to: '/bills', label: 'Bills', Icon: DocumentTextIcon },
   { to: '/calendar', label: 'Calendar', Icon: CalendarDaysIcon },
   { to: '/income', label: 'Income', Icon: BanknotesIcon },
+  { to: '/budget', label: 'Budget', Icon: WalletIcon },
   { to: '/categories', label: 'Categories', Icon: TagIcon },
   { to: '/settings', label: 'Settings', Icon: Cog6ToothIcon },
 ]
 
-// Mobile bottom nav — Calendar replaces Categories (Categories still in sidebar)
+// Mobile bottom nav — a focused subset of the sidebar
 const mobileNavLinks = [
   { to: '/dashboard', label: 'Dashboard', Icon: HomeIcon },
   { to: '/bills', label: 'Bills', Icon: DocumentTextIcon },
-  { to: '/calendar', label: 'Calendar', Icon: CalendarDaysIcon },
+  { to: '/budget', label: 'Budget', Icon: WalletIcon },
   { to: '/income', label: 'Income', Icon: BanknotesIcon },
   { to: '/settings', label: 'Settings', Icon: Cog6ToothIcon },
 ]
 
 // Aspirational features — visible in the nav but not built yet
 const placeholderLinks = [
-  { label: 'Budget', Icon: WalletIcon },
   { label: 'Reports', Icon: ChartPieIcon },
   { label: 'Goals', Icon: FlagIcon },
 ]

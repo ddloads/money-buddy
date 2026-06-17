@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api import auth, bills, categories, dashboard, income, templates, dev
+from app.api import auth, bills, budget, categories, dashboard, income, templates, dev
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +91,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
     app.include_router(bills.router, prefix="/bills", tags=["Bills"])
     app.include_router(categories.router, prefix="/categories", tags=["Categories"])
+    app.include_router(budget.router, prefix="/budget", tags=["Budget"])
     app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
     app.include_router(income.router, prefix="/income", tags=["Income"])
     app.include_router(templates.router, prefix="/templates", tags=["Templates"])

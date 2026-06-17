@@ -98,6 +98,12 @@ export const dashboardAPI = {
   debt: () => api.get('/dashboard/debt'),
 }
 
+// ─── Budget ────────────────────────────────────────────────────────────────
+
+export const budgetAPI = {
+  get: (year, month) => api.get('/budget', { params: { year, month } }),
+}
+
 // ─── Income ────────────────────────────────────────────────────────────────
 
 export const incomeAPI = {

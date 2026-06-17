@@ -101,7 +101,8 @@ Browser → nginx (:3107 → :80)
 | `api/auth.py` | Register, login (form data), Google OAuth, `/me` GET/PUT/DELETE, change password, logout |
 | `api/bills.py` | Bills CRUD, mark paid/unpay, receipt upload/delete, export, payoff estimate, payment history |
 | `api/categories.py` | Category CRUD |
-| `api/dashboard.py` | Split endpoints: `/summary`, `/upcoming`, `/monthly`, `/categories`, `/yearly`, `/income-vs-expenses` |
+| `api/budget.py` | Monthly budget vs. actual: `GET /budget?year=&month=`. Budgets are the recurring `monthly_budget` on each category; "spent" is bills due in the month. |
+| `api/dashboard.py` | Split endpoints: `/summary`, `/upcoming`, `/monthly`, `/categories`, `/yearly`, `/income-vs-expenses`, `/paycheck-plan`, `/debt` |
 | `api/income.py` | Income source CRUD |
 | `api/templates.py` | Bill template CRUD |
 | `models/` | SQLAlchemy ORM: `User`, `Bill`, `Category`, `Income`, `Payment`, `BillTemplate` |
@@ -115,7 +116,7 @@ All route handlers use `async def` with `AsyncSession`. Pattern: `await db.execu
 
 Every protected endpoint takes `current_user: User = Depends(get_current_user)` as the last parameter. User data is always scoped — never query without `where(Model.user_id == current_user.id)`.
 
-Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/dashboard`, `/income`, `/templates`) — route decorators use paths without that prefix.
+Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/budget`, `/dashboard`, `/income`, `/templates`) — route decorators use paths without that prefix.
 
 ### Frontend layout (`frontend/src/`)
 

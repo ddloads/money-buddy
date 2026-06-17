@@ -1,5 +1,5 @@
 import { isPast, isToday, isTomorrow, differenceInDays } from 'date-fns'
-import { CheckCircleIcon, ClockIcon, ExclamationCircleIcon, SparklesIcon } from '@heroicons/react/24/outline'
+import { CheckCircleIcon, ClockIcon, ExclamationCircleIcon, SparklesIcon, CalendarDaysIcon } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 import { useNavigate } from 'react-router-dom'
 import CategoryBadge from './CategoryBadge'
@@ -75,6 +75,15 @@ export default function BillCard({ bill, onMarkPaid, isMarkingPaid }) {
             <span className={colorMap[status.color]}>
               <status.Icon className="h-3 w-3" />
               {status.label}
+            </span>
+          </div>
+
+          {/* Always-visible explicit due date */}
+          <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-400">
+            <CalendarDaysIcon className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+            <span>
+              {bill.is_paid ? 'Was due ' : 'Due '}
+              {formatBillDate(bill.due_date, 'EEE, MMM d, yyyy')}
             </span>
           </div>
 

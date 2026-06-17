@@ -29,6 +29,7 @@ const sidebarLinks = [
   { to: '/calendar', label: 'Calendar', Icon: CalendarDaysIcon },
   { to: '/income', label: 'Income', Icon: BanknotesIcon },
   { to: '/budget', label: 'Budget', Icon: WalletIcon },
+  { to: '/reports', label: 'Reports', Icon: ChartPieIcon },
   { to: '/categories', label: 'Categories', Icon: TagIcon },
   { to: '/settings', label: 'Settings', Icon: Cog6ToothIcon },
 ]
@@ -44,7 +45,6 @@ const mobileNavLinks = [
 
 // Aspirational features — visible in the nav but not built yet
 const placeholderLinks = [
-  { label: 'Reports', Icon: ChartPieIcon },
   { label: 'Goals', Icon: FlagIcon },
 ]
 

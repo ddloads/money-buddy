@@ -140,6 +140,12 @@ export const transactionsAPI = {
   },
 }
 
+// ─── Reports ─────────────────────────────────────────────────────────────────
+
+export const reportsAPI = {
+  get: (months = 6) => api.get('/reports', { params: { months } }),
+}
+
 // ─── Category Rules (auto-categorization) ────────────────────────────────────
 
 export const categoryRulesAPI = {

@@ -104,6 +104,7 @@ Browser → nginx (:3107 → :80)
 | `api/category_rules.py` | Auto-categorization rules (keyword → category) CRUD + `POST /category-rules/apply` to backfill existing uncategorized transactions |
 | `api/budget.py` | Monthly budget vs. actual: `GET /budget?year=&month=`. Budgets are the recurring `monthly_budget` on each category; "spent" is bills due in the month. |
 | `api/dashboard.py` | Split endpoints: `/summary`, `/upcoming`, `/monthly`, `/categories`, `/yearly`, `/income-vs-expenses`, `/paycheck-plan`, `/debt` |
+| `api/reports.py` | Transaction analytics: `GET /reports?months=` → cash flow, net-worth trend, spending by category, totals |
 | `api/income.py` | Income source CRUD |
 | `api/templates.py` | Bill template CRUD |
 | `api/accounts.py` | Account CRUD + computed balances + `GET /accounts/net-worth` summary |
@@ -119,7 +120,7 @@ All route handlers use `async def` with `AsyncSession`. Pattern: `await db.execu
 
 Every protected endpoint takes `current_user: User = Depends(get_current_user)` as the last parameter. User data is always scoped — never query without `where(Model.user_id == current_user.id)`.
 
-Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/category-rules`, `/budget`, `/dashboard`, `/income`, `/accounts`, `/transactions`, `/templates`) — route decorators use paths without that prefix.
+Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/category-rules`, `/budget`, `/dashboard`, `/income`, `/accounts`, `/transactions`, `/reports`, `/templates`) — route decorators use paths without that prefix.
 
 ### Frontend layout (`frontend/src/`)
 

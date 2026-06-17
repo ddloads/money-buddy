@@ -56,6 +56,16 @@ def test_category_rules_endpoints_exist_for_frontend_contract():
     assert "/category-rules/apply" in paths
 
 
+def test_reports_endpoint_exists_for_frontend_contract():
+    route_index = {
+        (route.path, tuple(sorted(route.methods))): route
+        for route in app.routes
+        if getattr(route, "methods", None)
+    }
+
+    assert ("/reports", ("GET",)) in route_index
+
+
 def test_bill_pay_accepts_account_for_reconciliation():
     from app.schemas.bill import BillPayRequest
 

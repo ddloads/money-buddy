@@ -6,7 +6,7 @@ const FALLBACK_COLORS = [
   '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
 ]
 
-const CustomTooltip = ({ active, payload, format }) => {
+const CustomTooltip = ({ active, payload, format, noun = 'bill' }) => {
   if (!active || !payload?.length) return null
   const { name, value, payload: d } = payload[0]
   return (
@@ -17,12 +17,12 @@ const CustomTooltip = ({ active, payload, format }) => {
       <p className="text-slate-400">
         Total: <span className="font-medium text-white">{format(value)}</span>
       </p>
-      <p className="text-slate-500 text-xs">{d.count} bill{d.count !== 1 ? 's' : ''}</p>
+      <p className="text-slate-500 text-xs">{d.count} {noun}{d.count !== 1 ? 's' : ''}</p>
     </div>
   )
 }
 
-export default function CategoryChart({ data, loading }) {
+export default function CategoryChart({ data, loading, noun = 'bill', emptyText }) {
   const { format } = useCurrency()
   if (loading) {
     return (
@@ -44,7 +44,7 @@ export default function CategoryChart({ data, loading }) {
       <div className="h-56 flex items-center justify-center">
         <div className="text-center">
           <div className="text-3xl mb-2">🏷️</div>
-          <p className="text-sm text-slate-400">No categorised bills this month</p>
+          <p className="text-sm text-slate-400">{emptyText || 'No categorised bills this month'}</p>
         </div>
       </div>
     )
@@ -78,7 +78,7 @@ export default function CategoryChart({ data, loading }) {
               />
             ))}
           </Pie>
-          <Tooltip content={<CustomTooltip format={format} />} />
+          <Tooltip content={<CustomTooltip format={format} noun={noun} />} />
         </PieChart>
       </ResponsiveContainer>
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-2">

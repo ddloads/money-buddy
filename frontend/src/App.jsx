@@ -12,6 +12,7 @@ import Categories from './pages/Categories'
 import Budget from './pages/Budget'
 import Accounts from './pages/Accounts'
 import Transactions from './pages/Transactions'
+import Reports from './pages/Reports'
 import Income from './pages/Income'
 import Settings from './pages/Settings'
 import GoogleCallback from './pages/GoogleCallback'
@@ -83,6 +84,7 @@ export default function App() {
         <Route path="accounts" element={<Accounts />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="budget" element={<Budget />} />
+        <Route path="reports" element={<Reports />} />
         <Route path="categories" element={<Categories />} />
         <Route path="settings" element={<Settings />} />
       </Route>

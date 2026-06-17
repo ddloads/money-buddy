@@ -49,6 +49,34 @@ def test_accounts_and_transactions_endpoints_exist_for_frontend_contract():
     assert "/transactions/import/preview" in paths
 
 
+def test_category_rules_endpoints_exist_for_frontend_contract():
+    paths = {route.path for route in app.routes}
+
+    assert "/category-rules" in paths
+    assert "/category-rules/apply" in paths
+
+
+def test_bill_pay_accepts_account_for_reconciliation():
+    from app.schemas.bill import BillPayRequest
+
+    assert "account_id" in BillPayRequest.model_fields
+
+
+def test_auto_categorize_matches_longest_keyword_first():
+    from app.models.category_rule import CategoryRule
+    from app.services.categorize import build_matchers, match_category
+
+    rules = [
+        CategoryRule(user_id=1, keyword="food", category_id=10),
+        CategoryRule(user_id=1, keyword="whole foods", category_id=20),
+    ]
+    matchers = build_matchers(rules)
+    # "whole foods" (longer, more specific) should win over "food".
+    assert match_category(matchers, "WHOLE FOODS MARKET #123") == 20
+    assert match_category(matchers, "Generic food mart") == 10
+    assert match_category(matchers, "Gas station") is None
+
+
 def test_csv_import_parser_detects_columns_and_signs():
     from app.api.transactions import _parse_csv
 

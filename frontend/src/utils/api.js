@@ -140,6 +140,15 @@ export const transactionsAPI = {
   },
 }
 
+// ─── Category Rules (auto-categorization) ────────────────────────────────────
+
+export const categoryRulesAPI = {
+  list: () => api.get('/category-rules'),
+  create: (data) => api.post('/category-rules', data),
+  delete: (id) => api.delete(`/category-rules/${id}`),
+  apply: () => api.post('/category-rules/apply'),
+}
+
 // ─── Income ────────────────────────────────────────────────────────────────
 
 export const incomeAPI = {

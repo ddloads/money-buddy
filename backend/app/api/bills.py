@@ -21,10 +21,12 @@ from app.api.deps import get_current_user
 from app.core.appwrite_config import appwrite_settings
 from app.core.config import settings
 from app.core.database import get_db
+from app.models.account import Account
 from app.models.bill import Bill, RecurrenceInterval
 from app.models.payment import Payment
+from app.models.transaction import Transaction
 from app.models.user import User
-from app.schemas.bill import BillCreate, BillListResponse, BillRead, BillUpdate
+from app.schemas.bill import BillCreate, BillListResponse, BillPayRequest, BillRead, BillUpdate
 from app.schemas.payment import PaymentRead
 from app.services.payoff import amortize
 
@@ -248,6 +250,15 @@ async def delete_bill(
         except Exception as exc:
             logger.warning("Could not delete Appwrite receipt %s: %s", bill.receipt_url, exc)
     
+    # Keep any reconciled transactions (real money records) but unlink them.
+    linked = await db.execute(
+        select(Transaction).where(
+            Transaction.bill_id == bill.id, Transaction.user_id == current_user.id
+        )
+    )
+    for txn in linked.scalars().all():
+        txn.bill_id = None
+
     await db.delete(bill)
     await db.flush()
 
@@ -255,10 +266,15 @@ async def delete_bill(
 @router.post("/{bill_id}/pay", response_model=BillRead)
 async def mark_bill_paid(
     bill_id: int,
+    payload: Optional[BillPayRequest] = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Bill:
-    """Mark a bill as paid. For recurring bills, auto-creates the next instance."""
+    """Mark a bill as paid. For recurring bills, auto-creates the next instance.
+
+    When ``account_id`` is supplied, a matching expense transaction is recorded
+    against that account and linked to the bill (reversed if it is un-paid).
+    """
     from datetime import timezone
 
     bill = await _get_bill_or_404(db, bill_id, current_user.id)
@@ -269,6 +285,25 @@ async def mark_bill_paid(
     bill.is_paid = True
     bill.paid_at = datetime.now(timezone.utc)
     db.add(Payment(bill_id=bill.id, user_id=bill.user_id, action="paid", amount=bill.amount))
+
+    # Optional reconciliation: record a real expense transaction for this payment.
+    if payload and payload.account_id is not None:
+        account = await db.execute(
+            select(Account).where(
+                Account.id == payload.account_id, Account.user_id == current_user.id
+            )
+        )
+        if account.scalar_one_or_none() is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found")
+        db.add(Transaction(
+            user_id=current_user.id,
+            account_id=payload.account_id,
+            amount=-bill.amount,  # money out
+            date=bill.paid_at.date(),
+            description=bill.name,
+            category_id=bill.category_id,
+            bill_id=bill.id,
+        ))
 
     # Apply interest and reduce remaining balance for loans/credit cards
     next_balance: Optional[Decimal] = None
@@ -321,6 +356,16 @@ async def mark_bill_unpaid(
     bill.is_paid = False
     bill.paid_at = None
     db.add(Payment(bill_id=bill.id, user_id=bill.user_id, action="unpaid", amount=bill.amount))
+
+    # Reverse any reconciled transaction created when the bill was paid.
+    linked = await db.execute(
+        select(Transaction).where(
+            Transaction.bill_id == bill.id, Transaction.user_id == current_user.id
+        )
+    )
+    for txn in linked.scalars().all():
+        await db.delete(txn)
+
     await db.flush()
     await db.refresh(bill)
     await db.refresh(bill, attribute_names=["category"])

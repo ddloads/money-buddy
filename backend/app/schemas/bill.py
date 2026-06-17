@@ -89,3 +89,8 @@ class BillListResponse(BaseModel):
     page: int
     page_size: int
     pages: int
+
+
+class BillPayRequest(BaseModel):
+    # When set, record a matching expense transaction in this account.
+    account_id: Optional[int] = None

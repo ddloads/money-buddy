@@ -12,6 +12,7 @@ import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 import BillForm from '../components/BillForm'
 import CategoryBadge from '../components/CategoryBadge'
 import ConfirmDialog from '../components/ConfirmDialog'
+import PayBillModal from '../components/PayBillModal'
 import { formatBillDate } from '../utils/billDates'
 import { normalizeBillFormData } from '../utils/billPayload'
 import { useCurrency } from '../hooks/useCurrency'
@@ -200,9 +201,9 @@ export default function BillDetail({ isNew = false }) {
     })
   }
 
-  const handleMarkPaid = () => {
+  const handleMarkPaid = (accountId) => {
     markPaid.mutate(
-      { id, data: { paid_date: new Date().toISOString().split('T')[0] } },
+      { id, data: accountId ? { account_id: accountId } : {} },
       { onSuccess: () => setShowPayDialog(false) }
     )
   }
@@ -476,17 +477,15 @@ export default function BillDetail({ isNew = false }) {
         loading={deleteBill.isPending}
       />
 
-      {/* Mark paid confirmation */}
-      <ConfirmDialog
-        open={showPayDialog}
-        title="Mark as paid?"
-        message={`Mark "${bill?.name}" (${format(bill?.amount || 0)}) as paid today?`}
-        onConfirm={handleMarkPaid}
-        onCancel={() => setShowPayDialog(false)}
-        confirmLabel="Mark Paid"
-        loadingLabel="Saving…"
-        loading={markPaid.isPending}
-      />
+      {/* Mark paid (with optional reconciliation) */}
+      {showPayDialog && (
+        <PayBillModal
+          bill={bill}
+          onConfirm={handleMarkPaid}
+          onCancel={() => setShowPayDialog(false)}
+          loading={markPaid.isPending}
+        />
+      )}
     </div>
   )
 }

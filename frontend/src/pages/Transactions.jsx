@@ -11,9 +11,11 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CheckCircleIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline'
 import TransactionForm from '../components/TransactionForm'
 import ConfirmDialog from '../components/ConfirmDialog'
+import CategoryRulesModal from '../components/CategoryRulesModal'
 import { useAccounts } from '../hooks/useAccounts'
 import {
   useTransactions,
@@ -205,6 +207,7 @@ export default function Transactions() {
   const [editing, setEditing] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const [showImport, setShowImport] = useState(false)
+  const [showRules, setShowRules] = useState(false)
 
   const pageSize = 50
   const params = {
@@ -239,6 +242,14 @@ export default function Transactions() {
           <p className="text-sm text-slate-400 mt-0.5">Every dollar in and out, across your accounts.</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowRules(true)}
+            className="btn-secondary text-sm flex-1 sm:flex-none"
+            title="Auto-categorization rules"
+          >
+            <SparklesIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Rules</span>
+          </button>
           <button
             onClick={() => setShowImport(true)}
             disabled={accounts.length === 0}
@@ -379,6 +390,7 @@ export default function Transactions() {
 
       {showModal && <TxnModal txn={editing} onClose={() => { setShowModal(false); setEditing(null) }} />}
       {showImport && <ImportModal accounts={accounts} onClose={() => setShowImport(false)} />}
+      {showRules && <CategoryRulesModal onClose={() => setShowRules(false)} />}
 
       <ConfirmDialog
         open={!!deleting}

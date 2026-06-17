@@ -16,8 +16,10 @@ from sqlalchemy.orm import selectinload
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.account import Account
+from app.models.category_rule import CategoryRule
 from app.models.transaction import Transaction
 from app.models.user import User
+from app.services.categorize import build_matchers, match_category
 from app.schemas.transaction import (
     ImportPreview,
     ImportPreviewRow,
@@ -39,6 +41,13 @@ _DEBIT_KEYS = ("debit", "withdrawal", "withdrawals", "money out", "paid out")
 _CREDIT_KEYS = ("credit", "deposit", "deposits", "money in", "paid in")
 
 _DATE_FORMATS = ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%d/%m/%Y", "%d-%m-%Y", "%Y/%m/%d", "%m-%d-%Y")
+
+
+async def _load_matchers(db: AsyncSession, user_id: int) -> list[tuple[str, int]]:
+    result = await db.execute(
+        select(CategoryRule).where(CategoryRule.user_id == user_id)
+    )
+    return build_matchers(result.scalars().all())
 
 
 async def _get_account_or_404(db: AsyncSession, account_id: int, user_id: int) -> Account:
@@ -220,7 +229,12 @@ async def create_transaction(
 ) -> Transaction:
     """Create a transaction. The account's balance updates automatically."""
     await _get_account_or_404(db, payload.account_id, current_user.id)
-    txn = Transaction(**payload.model_dump(), user_id=current_user.id)
+    data = payload.model_dump()
+    # Auto-categorize from rules when no category was chosen.
+    if data.get("category_id") is None:
+        matchers = await _load_matchers(db, current_user.id)
+        data["category_id"] = match_category(matchers, data.get("description"))
+    txn = Transaction(**data, user_id=current_user.id)
     db.add(txn)
     await db.flush()
     await db.refresh(txn)
@@ -262,18 +276,22 @@ async def import_transactions(
     contents = await file.read()
     _, rows = _parse_csv(contents)
 
+    matchers = await _load_matchers(db, current_user.id)
+
     imported = 0
     skipped = 0
     for row in rows:
         if not row.valid or row.amount is None or row.date is None:
             skipped += 1
             continue
+        description = row.description or "(imported)"
         db.add(Transaction(
             user_id=current_user.id,
             account_id=account_id,
             amount=row.amount,
             date=row.date,
-            description=row.description or "(imported)",
+            description=description,
+            category_id=match_category(matchers, description),
         ))
         imported += 1
 

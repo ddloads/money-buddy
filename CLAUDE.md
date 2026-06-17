@@ -101,13 +101,14 @@ Browser → nginx (:3107 → :80)
 | `api/auth.py` | Register, login (form data), Google OAuth, `/me` GET/PUT/DELETE, change password, logout |
 | `api/bills.py` | Bills CRUD, mark paid/unpay, receipt upload/delete, export, payoff estimate, payment history |
 | `api/categories.py` | Category CRUD |
+| `api/category_rules.py` | Auto-categorization rules (keyword → category) CRUD + `POST /category-rules/apply` to backfill existing uncategorized transactions |
 | `api/budget.py` | Monthly budget vs. actual: `GET /budget?year=&month=`. Budgets are the recurring `monthly_budget` on each category; "spent" is bills due in the month. |
 | `api/dashboard.py` | Split endpoints: `/summary`, `/upcoming`, `/monthly`, `/categories`, `/yearly`, `/income-vs-expenses`, `/paycheck-plan`, `/debt` |
 | `api/income.py` | Income source CRUD |
 | `api/templates.py` | Bill template CRUD |
 | `api/accounts.py` | Account CRUD + computed balances + `GET /accounts/net-worth` summary |
-| `api/transactions.py` | Transaction CRUD, list with filters/pagination, CSV import (`POST /transactions/import` + `/import/preview`) |
-| `models/` | SQLAlchemy ORM: `User`, `Bill`, `Category`, `Income`, `Payment`, `BillTemplate`, `Account`, `Transaction` |
+| `api/transactions.py` | Transaction CRUD, list with filters/pagination, CSV import (`POST /transactions/import` + `/import/preview`); auto-categorizes via rules on import/create |
+| `models/` | SQLAlchemy ORM: `User`, `Bill`, `Category`, `Income`, `Payment`, `BillTemplate`, `Account`, `Transaction`, `CategoryRule` |
 | `schemas/` | Pydantic v2 request/response models |
 | `services/appwrite.py` | Optional Appwrite cloud storage for receipts; falls back to local disk |
 | `services/default_categories.py` | Seeds default categories for new users |
@@ -118,7 +119,7 @@ All route handlers use `async def` with `AsyncSession`. Pattern: `await db.execu
 
 Every protected endpoint takes `current_user: User = Depends(get_current_user)` as the last parameter. User data is always scoped — never query without `where(Model.user_id == current_user.id)`.
 
-Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/budget`, `/dashboard`, `/income`, `/accounts`, `/transactions`, `/templates`) — route decorators use paths without that prefix.
+Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/category-rules`, `/budget`, `/dashboard`, `/income`, `/accounts`, `/transactions`, `/templates`) — route decorators use paths without that prefix.
 
 ### Frontend layout (`frontend/src/`)
 
@@ -160,7 +161,11 @@ Additional auth endpoints: `PUT /auth/me` (update profile), `PUT /auth/me/passwo
 
 **Account:** `id, user_id, name, type (enum: checking/savings/cash/credit_card/loan/investment/other), institution, starting_balance (Numeric 14,2, signed), is_active, created_at, updated_at`. Current balance = `starting_balance + sum(transactions)` (computed in the API). `credit_card`/`loan` are liabilities (stored negative).
 
-**Transaction:** `id, user_id, account_id, amount (Numeric 14,2, signed: + in / − out), date, description, category_id, notes, created_at, updated_at`
+**Transaction:** `id, user_id, account_id, amount (Numeric 14,2, signed: + in / − out), date, description, category_id, bill_id (set when auto-created by paying a bill), notes, created_at, updated_at`
+
+**CategoryRule:** `id, user_id, keyword, category_id, created_at`. If a transaction description contains `keyword` (case-insensitive), it's assigned `category_id`. Applied on CSV import, on manual create when no category is given, and on demand via `POST /category-rules/apply`. Longer keywords match first.
+
+Paying a bill (`POST /bills/{id}/pay`) accepts an optional `account_id`; when set, a matching expense transaction is recorded against that account and linked via `Transaction.bill_id` (deleted again if the bill is un-paid).
 
 **BillTemplate:** `id, user_id, name, amount, category_id, notes, is_recurring, recurrence_interval`
 

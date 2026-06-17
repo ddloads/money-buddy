@@ -17,6 +17,7 @@ from app.api import (
     bills,
     budget,
     categories,
+    category_rules,
     dashboard,
     income,
     templates,
@@ -58,6 +59,7 @@ async def lifespan(app: FastAPI):
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS default_categories_seeded_at TIMESTAMPTZ",
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()",
                 "ALTER TABLE categories ADD COLUMN IF NOT EXISTS monthly_budget NUMERIC(12,2)",
+                "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS bill_id BIGINT REFERENCES bills(id) ON DELETE SET NULL",
             ]
             for stmt in _pg_migrations:
                 await conn.execute(text(stmt))
@@ -102,6 +104,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
     app.include_router(bills.router, prefix="/bills", tags=["Bills"])
     app.include_router(categories.router, prefix="/categories", tags=["Categories"])
+    app.include_router(category_rules.router, prefix="/category-rules", tags=["Category Rules"])
     app.include_router(budget.router, prefix="/budget", tags=["Budget"])
     app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
     app.include_router(income.router, prefix="/income", tags=["Income"])

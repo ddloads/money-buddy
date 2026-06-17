@@ -36,6 +36,10 @@ class Transaction(Base):
     category_id: Mapped[Optional[int]] = mapped_column(
         BigInteger, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    # Set when this transaction was auto-created by paying a tracked bill.
+    bill_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("bills.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

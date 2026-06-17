@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+import calendar
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query
@@ -15,6 +16,7 @@ from app.models.category import Category
 from app.models.income import Income, IncomeFrequency
 from app.models.user import User
 from app.schemas.bill import BillRead
+from app.services.payoff import amortize
 
 router = APIRouter()
 
@@ -358,3 +360,233 @@ async def get_yearly_breakdown(
         }
         for m in range(1, 13)
     ]
+
+
+# ── Paycheck planning ──────────────────────────────────────────────────────────
+
+_MONTHS_PER_STEP = {
+    IncomeFrequency.MONTHLY: 1,
+    IncomeFrequency.QUARTERLY: 3,
+    IncomeFrequency.YEARLY: 12,
+}
+
+# Monthly-equivalent value of each recurring frequency, used to pick the
+# "primary" paycheck that sets the cadence for the planner.
+_MONTHLY_EQUIV = {
+    IncomeFrequency.WEEKLY: 4.333,
+    IncomeFrequency.BIWEEKLY: 2.167,
+    IncomeFrequency.MONTHLY: 1.0,
+    IncomeFrequency.QUARTERLY: 1 / 3,
+    IncomeFrequency.YEARLY: 1 / 12,
+}
+
+
+def _advance(d: date, freq: IncomeFrequency, n: int = 1) -> date:
+    """Move a date forward (or backward, for negative ``n``) by ``n`` pay cycles."""
+    if freq == IncomeFrequency.WEEKLY:
+        return d + timedelta(weeks=n)
+    if freq == IncomeFrequency.BIWEEKLY:
+        return d + timedelta(weeks=2 * n)
+    months = _MONTHS_PER_STEP[freq] * n
+    total = (d.year * 12 + (d.month - 1)) + months
+    year, month0 = divmod(total, 12)
+    month = month0 + 1
+    day = min(d.day, calendar.monthrange(year, month)[1])
+    return date(year, month, day)
+
+
+def _period_boundaries(anchor: date, freq: IncomeFrequency, today: date, count: int) -> list[date]:
+    """Return ``count + 1`` payday boundaries starting from the current pay period.
+
+    boundaries[0] is the payday that opens the current period (latest payday on
+    or before today); each subsequent entry is the following payday.
+    """
+    pay = anchor
+    if pay > today:
+        while pay > today:
+            pay = _advance(pay, freq, -1)
+    else:
+        while _advance(pay, freq, 1) <= today:
+            pay = _advance(pay, freq, 1)
+    boundaries = [pay]
+    for _ in range(count):
+        boundaries.append(_advance(boundaries[-1], freq, 1))
+    return boundaries
+
+
+def _paydays_in_window(anchor: date, freq: IncomeFrequency, win_start: date, win_end: date) -> int:
+    """Count paydays falling in [win_start, win_end) that are on or after the anchor."""
+    # Walk to the first payday on or after win_start, whether the anchor sits
+    # before or after the window.
+    pay = anchor
+    if pay < win_start:
+        while pay < win_start:
+            pay = _advance(pay, freq, 1)
+    else:
+        while pay >= win_start:
+            pay = _advance(pay, freq, -1)
+        pay = _advance(pay, freq, 1)
+    count = 0
+    while pay < win_end:
+        if pay >= anchor:
+            count += 1
+        pay = _advance(pay, freq, 1)
+    return count
+
+
+@router.get("/paycheck-plan", response_model=dict[str, Any])
+async def get_paycheck_plan(
+    periods: int = Query(3, ge=1, le=6),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Bucket unpaid bills into upcoming pay periods so the user can see what
+    comes out of this paycheck versus the next one(s)."""
+    today = datetime.now(timezone.utc).date()
+
+    incomes_result = await db.execute(
+        select(Income).where(
+            Income.user_id == current_user.id, Income.is_active == True  # noqa: E712
+        )
+    )
+    incomes = incomes_result.scalars().all()
+    recurring = [i for i in incomes if i.frequency != IncomeFrequency.ONE_TIME]
+
+    if not recurring:
+        return {
+            "has_schedule": False,
+            "frequency": None,
+            "periods": [],
+        }
+
+    # The largest recurring source (by monthly-equivalent value) sets the cadence.
+    primary = max(
+        recurring,
+        key=lambda i: float(i.amount) * _MONTHLY_EQUIV.get(i.frequency, 0),
+    )
+    primary_anchor = primary.start_date or today
+    boundaries = _period_boundaries(primary_anchor, primary.frequency, today, periods)
+
+    bills_result = await db.execute(
+        select(Bill)
+        .where(Bill.user_id == current_user.id, Bill.is_paid == False)  # noqa: E712
+        .options(selectinload(Bill.category))
+        .order_by(Bill.due_date.asc())
+    )
+    bills = bills_result.scalars().all()
+
+    # Pre-compute per-period buckets.
+    buckets: list[list[dict[str, Any]]] = [[] for _ in range(periods)]
+    last_boundary = boundaries[-1]
+    for bill in bills:
+        d = bill.due_date.date()
+        # Bills due before the current period opened are overdue carry-over →
+        # they still have to come out of this paycheck.
+        if d < boundaries[0]:
+            idx = 0
+        elif d >= last_boundary:
+            continue  # belongs to a period beyond the requested window
+        else:
+            idx = next(
+                i for i in range(periods) if boundaries[i] <= d < boundaries[i + 1]
+            )
+        payload = BillRead.model_validate(bill).model_dump()
+        payload["overdue"] = d < today
+        buckets[idx].append(payload)
+
+    period_list: list[dict[str, Any]] = []
+    for i in range(periods):
+        win_start, win_end = boundaries[i], boundaries[i + 1]
+
+        income = 0.0
+        for inc in recurring:
+            anchor = inc.start_date or today
+            income += _paydays_in_window(anchor, inc.frequency, win_start, win_end) * float(inc.amount)
+        # One-time income landing inside the window.
+        for inc in incomes:
+            if inc.frequency == IncomeFrequency.ONE_TIME and inc.start_date:
+                if win_start <= inc.start_date < win_end:
+                    income += float(inc.amount)
+
+        bills_total = sum(float(b["amount"]) for b in buckets[i])
+        period_list.append({
+            "index": i,
+            "payday": win_start.isoformat(),
+            "start": win_start.isoformat(),
+            "end": win_end.isoformat(),
+            "income": round(income, 2),
+            "bills_total": round(bills_total, 2),
+            "leftover": round(income - bills_total, 2),
+            "bill_count": len(buckets[i]),
+            "bills": buckets[i],
+        })
+
+    return {
+        "has_schedule": True,
+        "frequency": primary.frequency.value,
+        "primary_source": primary.name,
+        "periods": period_list,
+    }
+
+
+@router.get("/debt", response_model=dict[str, Any])
+async def get_debt_overview(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Summarize outstanding debt (bills with a remaining balance) and project
+    how much can be paid off, including total interest and payoff dates."""
+    result = await db.execute(
+        select(Bill)
+        .where(Bill.user_id == current_user.id, Bill.remaining_balance > 0)
+        .options(selectinload(Bill.category))
+        .order_by(Bill.remaining_balance.desc())
+    )
+    bills = result.scalars().all()
+
+    items: list[dict[str, Any]] = []
+    total_debt = 0.0
+    monthly_payment = 0.0
+    monthly_interest = 0.0
+    projected_interest = 0.0
+    payable_count = 0
+
+    for bill in bills:
+        balance = float(bill.remaining_balance)
+        payment = float(bill.amount)
+        rate = float(bill.interest_rate or 0)
+        amo = amortize(balance, payment, rate)
+
+        total_debt += balance
+        monthly_payment += payment
+        monthly_interest += balance * (rate / 100 / 12)
+        if amo["payable"]:
+            payable_count += 1
+            projected_interest += amo["total_interest"] or 0.0
+
+        items.append({
+            "id": bill.id,
+            "name": bill.name,
+            "category": {
+                "name": bill.category.name,
+                "color": bill.category.color,
+                "icon": bill.category.icon,
+            } if bill.category else None,
+            "remaining_balance": round(balance, 2),
+            "monthly_payment": round(payment, 2),
+            "interest_rate": rate,
+            "payable": amo["payable"],
+            "months_remaining": amo["months_remaining"],
+            "estimated_payoff_date": amo["estimated_payoff_date"],
+            "total_interest": amo["total_interest"],
+        })
+
+    return {
+        "total_debt": round(total_debt, 2),
+        "debt_count": len(items),
+        "monthly_payment": round(monthly_payment, 2),
+        "monthly_interest": round(monthly_interest, 2),
+        "projected_interest": round(projected_interest, 2),
+        "all_payable": payable_count == len(items),
+        "items": items,
+    }

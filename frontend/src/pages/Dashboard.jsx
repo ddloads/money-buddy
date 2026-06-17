@@ -35,6 +35,8 @@ import YearlyChart from '../components/YearlyChart'
 import IncomeVsExpensesChart from '../components/IncomeVsExpensesChart'
 import CalendarWidget from '../components/CalendarWidget'
 import DashboardWidget from '../components/DashboardWidget'
+import PaycheckPlanner from '../components/PaycheckPlanner'
+import DebtOverview from '../components/DebtOverview'
 import {
   useDashboardSummary,
   useUpcomingBills,
@@ -42,6 +44,8 @@ import {
   useCategoryStats,
   useYearlyStats,
   useIncomeVsExpenses,
+  usePaycheckPlan,
+  useDebtOverview,
 } from '../hooks/useDashboard'
 import { useAuthStore } from '../store/authStore'
 import { useCurrency } from '../hooks/useCurrency'
@@ -57,14 +61,18 @@ export default function Dashboard() {
   const [showYearly, setShowYearly] = useState(false)
   const [incomePeriod, setIncomePeriod] = useState('monthly')
 
+  const { order, hidden, settings, reorder, hide, show, setSetting, reset } = useDashboardStore()
+
   const { data: summary, isLoading: summaryLoading } = useDashboardSummary()
-  const { data: upcoming, isLoading: upcomingLoading } = useUpcomingBills(7)
+  const { data: upcoming, isLoading: upcomingLoading } = useUpcomingBills(settings.upcomingDays)
   const { data: monthly, isLoading: monthlyLoading } = useMonthlyStats(6)
   const { data: categories, isLoading: categoriesLoading } = useCategoryStats()
   const { data: yearly, isLoading: yearlyLoading } = useYearlyStats()
   const { data: incomeVsExpenses, isLoading: incomeVsExpensesLoading } = useIncomeVsExpenses(6)
+  const { data: paycheckPlan, isLoading: paycheckLoading } = usePaycheckPlan(settings.paycheckPeriods)
+  const { data: debt, isLoading: debtLoading } = useDebtOverview()
 
-  const { order, hidden, reorder, hide, show, reset } = useDashboardStore()
+  const leftoverThisCheck = paycheckPlan?.periods?.[0]?.leftover ?? null
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -170,6 +178,52 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+          </div>
+        )
+
+      case 'paycheck-plan':
+        return (
+          <div className="card p-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
+              <div>
+                <h2 className="section-title">Paycheck Planner</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {paycheckPlan?.has_schedule
+                    ? `Bills grouped by ${paycheckPlan.frequency} paycheck — what comes out now vs. later`
+                    : 'See which bills each paycheck has to cover'}
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/income')}
+                className="text-sm text-blue-400 hover:underline flex items-center gap-1 font-medium flex-shrink-0"
+              >
+                Manage income
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <PaycheckPlanner data={paycheckPlan} loading={paycheckLoading} />
+          </div>
+        )
+
+      case 'debt':
+        return (
+          <div className="card p-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-4">
+              <div>
+                <h2 className="section-title">Debt Payoff</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  What you owe, when it&apos;s paid off, and how much you can put toward it
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/bills')}
+                className="text-sm text-emerald-400 hover:underline flex items-center gap-1 font-medium flex-shrink-0"
+              >
+                View bills
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <DebtOverview data={debt} loading={debtLoading} leftoverThisCheck={leftoverThisCheck} />
           </div>
         )
 
@@ -381,6 +435,36 @@ export default function Dashboard() {
               <ArrowPathIcon className="h-3.5 w-3.5" />
               Reset layout
             </button>
+          </div>
+
+          {/* Display settings */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1 border-t border-white/[0.06]">
+            <label className="flex items-center gap-2 text-xs text-slate-400">
+              Upcoming window
+              <select
+                value={settings.upcomingDays}
+                onChange={(e) => setSetting('upcomingDays', Number(e.target.value))}
+                className="bg-white/[0.06] border border-white/10 rounded-lg px-2 py-1 text-slate-200"
+              >
+                <option value={7}>7 days</option>
+                <option value={14}>14 days</option>
+                <option value={30}>30 days</option>
+                <option value={60}>60 days</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-xs text-slate-400">
+              Paychecks shown
+              <select
+                value={settings.paycheckPeriods}
+                onChange={(e) => setSetting('paycheckPeriods', Number(e.target.value))}
+                className="bg-white/[0.06] border border-white/10 rounded-lg px-2 py-1 text-slate-200"
+              >
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+                <option value={4}>4</option>
+                <option value={6}>6</option>
+              </select>
+            </label>
           </div>
 
           {hiddenWidgets.length > 0 && (

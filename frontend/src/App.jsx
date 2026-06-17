@@ -10,6 +10,8 @@ import BillDetail from './pages/BillDetail'
 import Calendar from './pages/Calendar'
 import Categories from './pages/Categories'
 import Budget from './pages/Budget'
+import Accounts from './pages/Accounts'
+import Transactions from './pages/Transactions'
 import Income from './pages/Income'
 import Settings from './pages/Settings'
 import GoogleCallback from './pages/GoogleCallback'
@@ -78,6 +80,8 @@ export default function App() {
         <Route path="bills/:id" element={<BillDetail />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="income" element={<Income />} />
+        <Route path="accounts" element={<Accounts />} />
+        <Route path="transactions" element={<Transactions />} />
         <Route path="budget" element={<Budget />} />
         <Route path="categories" element={<Categories />} />
         <Route path="settings" element={<Settings />} />

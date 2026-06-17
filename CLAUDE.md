@@ -105,7 +105,9 @@ Browser → nginx (:3107 → :80)
 | `api/dashboard.py` | Split endpoints: `/summary`, `/upcoming`, `/monthly`, `/categories`, `/yearly`, `/income-vs-expenses`, `/paycheck-plan`, `/debt` |
 | `api/income.py` | Income source CRUD |
 | `api/templates.py` | Bill template CRUD |
-| `models/` | SQLAlchemy ORM: `User`, `Bill`, `Category`, `Income`, `Payment`, `BillTemplate` |
+| `api/accounts.py` | Account CRUD + computed balances + `GET /accounts/net-worth` summary |
+| `api/transactions.py` | Transaction CRUD, list with filters/pagination, CSV import (`POST /transactions/import` + `/import/preview`) |
+| `models/` | SQLAlchemy ORM: `User`, `Bill`, `Category`, `Income`, `Payment`, `BillTemplate`, `Account`, `Transaction` |
 | `schemas/` | Pydantic v2 request/response models |
 | `services/appwrite.py` | Optional Appwrite cloud storage for receipts; falls back to local disk |
 | `services/default_categories.py` | Seeds default categories for new users |
@@ -116,7 +118,7 @@ All route handlers use `async def` with `AsyncSession`. Pattern: `await db.execu
 
 Every protected endpoint takes `current_user: User = Depends(get_current_user)` as the last parameter. User data is always scoped — never query without `where(Model.user_id == current_user.id)`.
 
-Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/budget`, `/dashboard`, `/income`, `/templates`) — route decorators use paths without that prefix.
+Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/budget`, `/dashboard`, `/income`, `/accounts`, `/transactions`, `/templates`) — route decorators use paths without that prefix.
 
 ### Frontend layout (`frontend/src/`)
 
@@ -156,9 +158,13 @@ Additional auth endpoints: `PUT /auth/me` (update profile), `PUT /auth/me/passwo
 
 **Payment:** `id, bill_id, user_id, amount, paid_at, notes`
 
+**Account:** `id, user_id, name, type (enum: checking/savings/cash/credit_card/loan/investment/other), institution, starting_balance (Numeric 14,2, signed), is_active, created_at, updated_at`. Current balance = `starting_balance + sum(transactions)` (computed in the API). `credit_card`/`loan` are liabilities (stored negative).
+
+**Transaction:** `id, user_id, account_id, amount (Numeric 14,2, signed: + in / − out), date, description, category_id, notes, created_at, updated_at`
+
 **BillTemplate:** `id, user_id, name, amount, category_id, notes, is_recurring, recurrence_interval`
 
-User → Bills, Categories, Income cascade-delete.
+User → Bills, Categories, Income, Accounts, Transactions cascade-delete. Account → Transactions cascade-delete. New tables (`accounts`, `transactions`) are created automatically by `Base.metadata.create_all` on startup — no manual migration needed.
 
 ### Receipt handling
 

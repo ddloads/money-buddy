@@ -104,6 +104,42 @@ export const budgetAPI = {
   get: (year, month) => api.get('/budget', { params: { year, month } }),
 }
 
+// ─── Accounts ──────────────────────────────────────────────────────────────
+
+export const accountsAPI = {
+  list: () => api.get('/accounts'),
+  netWorth: () => api.get('/accounts/net-worth'),
+  get: (id) => api.get(`/accounts/${id}`),
+  create: (data) => api.post('/accounts', data),
+  update: (id, data) => api.put(`/accounts/${id}`, data),
+  delete: (id) => api.delete(`/accounts/${id}`),
+}
+
+// ─── Transactions ────────────────────────────────────────────────────────────
+
+export const transactionsAPI = {
+  list: (params) => api.get('/transactions', { params }),
+  get: (id) => api.get(`/transactions/${id}`),
+  create: (data) => api.post('/transactions', data),
+  update: (id, data) => api.put(`/transactions/${id}`, data),
+  delete: (id) => api.delete(`/transactions/${id}`),
+  previewImport: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/transactions/import/preview', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  import: (accountId, file) => {
+    const formData = new FormData()
+    formData.append('account_id', accountId)
+    formData.append('file', file)
+    return api.post('/transactions/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+}
+
 // ─── Income ────────────────────────────────────────────────────────────────
 
 export const incomeAPI = {

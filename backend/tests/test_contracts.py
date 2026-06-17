@@ -39,6 +39,34 @@ def test_budget_endpoint_exists_for_frontend_contract():
     assert ("/budget", ("GET",)) in route_index
 
 
+def test_accounts_and_transactions_endpoints_exist_for_frontend_contract():
+    paths = {route.path for route in app.routes}
+
+    assert "/accounts" in paths
+    assert "/accounts/net-worth" in paths
+    assert "/transactions" in paths
+    assert "/transactions/import" in paths
+    assert "/transactions/import/preview" in paths
+
+
+def test_csv_import_parser_detects_columns_and_signs():
+    from app.api.transactions import _parse_csv
+
+    # Single signed amount column.
+    signed = b"Date,Description,Amount\n2026-06-01,Coffee,-4.50\n06/02/2026,Paycheck,1200.00\nbad,Row,\n"
+    detected, rows = _parse_csv(signed)
+    assert detected["date"] and detected["amount"]
+    assert rows[0].amount == __import__("decimal").Decimal("-4.50")
+    assert rows[1].amount == __import__("decimal").Decimal("1200.00")
+    assert rows[2].valid is False  # missing amount
+
+    # Separate debit/credit columns → credit positive, debit negative.
+    split = b"Posted,Payee,Debit,Credit\n2026-06-03,Groceries,55.20,\n2026-06-04,Refund,,12.00\n"
+    _, rows2 = _parse_csv(split)
+    assert rows2[0].amount == __import__("decimal").Decimal("-55.20")
+    assert rows2[1].amount == __import__("decimal").Decimal("12.00")
+
+
 def test_paycheck_planner_helpers_bucket_paydays_correctly():
     from datetime import date
 

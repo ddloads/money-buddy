@@ -14,6 +14,8 @@ import {
   ChartPieIcon,
   FlagIcon,
   CalendarDaysIcon,
+  BuildingLibraryIcon,
+  ArrowsRightLeftIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../store/authStore'
 import { useAuth } from '../hooks/useAuth'
@@ -21,6 +23,8 @@ import PlaceholderTag from './PlaceholderTag'
 
 const sidebarLinks = [
   { to: '/dashboard', label: 'Dashboard', Icon: HomeIcon },
+  { to: '/accounts', label: 'Accounts', Icon: BuildingLibraryIcon },
+  { to: '/transactions', label: 'Transactions', Icon: ArrowsRightLeftIcon },
   { to: '/bills', label: 'Bills', Icon: DocumentTextIcon },
   { to: '/calendar', label: 'Calendar', Icon: CalendarDaysIcon },
   { to: '/income', label: 'Income', Icon: BanknotesIcon },
@@ -29,12 +33,12 @@ const sidebarLinks = [
   { to: '/settings', label: 'Settings', Icon: Cog6ToothIcon },
 ]
 
-// Mobile bottom nav — a focused subset of the sidebar
+// Mobile bottom nav — a focused subset; the rest live in the slide-out sidebar
 const mobileNavLinks = [
   { to: '/dashboard', label: 'Dashboard', Icon: HomeIcon },
+  { to: '/accounts', label: 'Accounts', Icon: BuildingLibraryIcon },
   { to: '/bills', label: 'Bills', Icon: DocumentTextIcon },
   { to: '/budget', label: 'Budget', Icon: WalletIcon },
-  { to: '/income', label: 'Income', Icon: BanknotesIcon },
   { to: '/settings', label: 'Settings', Icon: Cog6ToothIcon },
 ]
 

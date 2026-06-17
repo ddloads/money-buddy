@@ -4,6 +4,7 @@ import { arrayMove } from '@dnd-kit/sortable'
 
 export const DEFAULT_WIDGETS = [
   { id: 'summary', title: 'Overview Stats' },
+  { id: 'net-worth', title: 'Net Worth' },
   { id: 'paycheck-plan', title: 'Paycheck Planner' },
   { id: 'debt', title: 'Debt Payoff' },
   { id: 'upcoming', title: 'Upcoming Bills' },

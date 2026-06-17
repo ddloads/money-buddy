@@ -25,6 +25,7 @@ import {
   EyeIcon,
   ArrowPathIcon,
   EyeSlashIcon,
+  ScaleIcon,
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import StatCard from '../components/StatCard'
@@ -47,6 +48,7 @@ import {
   usePaycheckPlan,
   useDebtOverview,
 } from '../hooks/useDashboard'
+import { useNetWorth } from '../hooks/useAccounts'
 import { useAuthStore } from '../store/authStore'
 import { useCurrency } from '../hooks/useCurrency'
 import { useDashboardStore, DEFAULT_WIDGETS } from '../store/dashboardStore'
@@ -71,6 +73,7 @@ export default function Dashboard() {
   const { data: incomeVsExpenses, isLoading: incomeVsExpensesLoading } = useIncomeVsExpenses(6)
   const { data: paycheckPlan, isLoading: paycheckLoading } = usePaycheckPlan(settings.paycheckPeriods)
   const { data: debt, isLoading: debtLoading } = useDebtOverview()
+  const { data: netWorth, isLoading: netWorthLoading } = useNetWorth()
 
   const leftoverThisCheck = paycheckPlan?.periods?.[0]?.leftover ?? null
 
@@ -175,6 +178,56 @@ export default function Dashboard() {
                   <div className="p-2.5 rounded-xl bg-blue-500/15 flex-shrink-0">
                     <BanknotesIcon className="h-6 w-6 text-blue-400" />
                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+
+      case 'net-worth':
+        return (
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="section-title flex items-center gap-2">
+                <ScaleIcon className="h-4 w-4 text-slate-400" />
+                Net Worth
+              </h2>
+              <button
+                onClick={() => navigate('/accounts')}
+                className="text-sm text-emerald-400 hover:underline flex items-center gap-1 font-medium"
+              >
+                Accounts
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            {netWorthLoading ? (
+              <div className="grid grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
+              </div>
+            ) : !netWorth || netWorth.account_count === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-sm font-medium text-slate-200 mb-1">No accounts yet</p>
+                <p className="text-xs text-slate-500 mb-3">Add your accounts to start tracking net worth.</p>
+                <button onClick={() => navigate('/accounts')} className="btn-secondary text-sm gap-1.5">
+                  Add accounts
+                  <ArrowRightIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                <div className="rounded-xl bg-white/[0.03] p-4">
+                  <p className="text-xs text-slate-400 mb-1">Net worth</p>
+                  <p className={`text-xl font-bold ${netWorth.net_worth < 0 ? 'text-rose-300' : 'text-emerald-300'}`}>
+                    {formatCurrency(netWorth.net_worth)}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/[0.03] p-4">
+                  <p className="text-xs text-slate-400 mb-1">Assets</p>
+                  <p className="text-xl font-bold text-slate-100">{formatCurrency(netWorth.total_assets)}</p>
+                </div>
+                <div className="rounded-xl bg-white/[0.03] p-4">
+                  <p className="text-xs text-slate-400 mb-1">Liabilities</p>
+                  <p className="text-xl font-bold text-amber-300">{formatCurrency(netWorth.total_liabilities)}</p>
                 </div>
               </div>
             )}

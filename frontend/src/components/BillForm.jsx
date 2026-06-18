@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { useEffect } from 'react'
 import { useCategories } from '../hooks/useCategories'
+import { useAccounts } from '../hooks/useAccounts'
 import { toDateInputValue } from '../utils/billDates'
 import { useCurrency } from '../hooks/useCurrency'
 import Spinner from './Spinner'
@@ -15,6 +16,7 @@ const RECURRENCE_OPTIONS = [
 
 export default function BillForm({ defaultValues, onSubmit, isLoading, submitLabel = 'Save Bill' }) {
   const { data: categories } = useCategories()
+  const { data: accounts = [] } = useAccounts()
   const { symbol } = useCurrency()
 
   const {
@@ -27,6 +29,7 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
       name: '',
       amount: '',
       category_id: '',
+      funding_account_id: '',
       autopay_enabled: false,
       recurrence: '',
       interest_rate: '',
@@ -46,6 +49,7 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
         amount: defaultValues.amount || '',
         due_date: toDateInputValue(defaultValues.due_date),
         category_id: defaultValues.category_id || defaultValues.category?.id || '',
+        funding_account_id: defaultValues.funding_account_id || '',
         autopay_enabled: Boolean(defaultValues.autopay_enabled),
         recurrence: defaultValues.recurrence_interval || defaultValues.recurrence || '',
         interest_rate: defaultValues.interest_rate ?? '',
@@ -123,6 +127,22 @@ export default function BillForm({ defaultValues, onSubmit, isLoading, submitLab
           ))}
         </select>
       </div>
+
+      {/* Funding account */}
+      {accounts.length > 0 && (
+        <div>
+          <label className="label" htmlFor="funding_account_id">Paid from account</label>
+          <select id="funding_account_id" className="input" {...register('funding_account_id')}>
+            <option value="">— Not linked —</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-slate-500">
+            Tag the account that covers this bill. It&apos;s preselected when you mark the bill paid.
+          </p>
+        </div>
+      )}
 
       {/* Auto Pay */}
       <label

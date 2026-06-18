@@ -110,7 +110,9 @@ Browser → nginx (:3107 → :80)
 | `api/templates.py` | Bill template CRUD |
 | `api/accounts.py` | Account CRUD + computed balances + `GET /accounts/net-worth` summary |
 | `api/transactions.py` | Transaction CRUD, list with filters/pagination, CSV import (`POST /transactions/import` + `/import/preview`); auto-categorizes via rules on import/create |
-| `models/` | SQLAlchemy ORM: `User`, `Bill`, `Category`, `Income`, `Payment`, `BillTemplate`, `Account`, `Transaction`, `CategoryRule` |
+| `api/transfers.py` | Account-to-account transfers (paired legs sharing a `transfer_group`, flagged `is_transfer` so reports exclude them) |
+| `api/recurring_transfers.py` | Scheduled repeating transfers; due ones are materialized on list/`POST /recurring-transfers/run` |
+| `models/` | SQLAlchemy ORM: `User`, `Bill`, `Category`, `Income`, `Payment`, `BillTemplate`, `Account`, `Transaction`, `CategoryRule`, `Goal`, `RecurringTransfer` |
 | `schemas/` | Pydantic v2 request/response models |
 | `services/appwrite.py` | Optional Appwrite cloud storage for receipts; falls back to local disk |
 | `services/default_categories.py` | Seeds default categories for new users |
@@ -121,7 +123,7 @@ All route handlers use `async def` with `AsyncSession`. Pattern: `await db.execu
 
 Every protected endpoint takes `current_user: User = Depends(get_current_user)` as the last parameter. User data is always scoped — never query without `where(Model.user_id == current_user.id)`.
 
-Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/category-rules`, `/budget`, `/dashboard`, `/income`, `/accounts`, `/transactions`, `/reports`, `/goals`, `/templates`) — route decorators use paths without that prefix.
+Router prefixes are set in `main.py` (`/auth`, `/bills`, `/categories`, `/category-rules`, `/budget`, `/dashboard`, `/income`, `/accounts`, `/transactions`, `/transfers`, `/recurring-transfers`, `/reports`, `/goals`, `/templates`) — route decorators use paths without that prefix.
 
 ### Frontend layout (`frontend/src/`)
 
@@ -163,7 +165,11 @@ Additional auth endpoints: `PUT /auth/me` (update profile), `PUT /auth/me/passwo
 
 **Account:** `id, user_id, name, type (enum: checking/savings/cash/credit_card/loan/investment/other), institution, starting_balance (Numeric 14,2, signed), is_active, created_at, updated_at`. Current balance = `starting_balance + sum(transactions)` (computed in the API). `credit_card`/`loan` are liabilities (stored negative).
 
-**Transaction:** `id, user_id, account_id, amount (Numeric 14,2, signed: + in / − out), date, description, category_id, bill_id (set when auto-created by paying a bill), notes, created_at, updated_at`
+**Transaction:** `id, user_id, account_id, amount (Numeric 14,2, signed: + in / − out), date, description, category_id, bill_id (set when auto-created by paying a bill), notes, is_transfer, transfer_group (both legs of a transfer share it), created_at, updated_at`. Transfers are excluded from cash-flow/spending reports.
+
+**RecurringTransfer:** `id, user_id, from_account_id, to_account_id, amount, frequency (RecurrenceInterval), next_run, description, is_active, created_at, updated_at`. Due occurrences materialize into a transfer pair, advancing `next_run`. New table created by `create_all`.
+
+Bills gained `funding_account_id` (the account that covers them) — preselected when marking the bill paid, and surfaced as coverage info on the Accounts page.
 
 **CategoryRule:** `id, user_id, keyword, category_id, created_at`. If a transaction description contains `keyword` (case-insensitive), it's assigned `category_id`. Applied on CSV import, on manual create when no category is given, and on demand via `POST /category-rules/apply`. Longer keywords match first.
 

@@ -291,12 +291,14 @@ export default function Bills() {
         </>
       )}
 
-      <PayBillModal
-        bill={payingBill}
-        onConfirm={confirmPay}
-        onCancel={() => setPayingBill(null)}
-        loading={markPaid.isPending}
-      />
+      {payingBill && (
+        <PayBillModal
+          bill={payingBill}
+          onConfirm={confirmPay}
+          onCancel={() => setPayingBill(null)}
+          loading={markPaid.isPending}
+        />
+      )}
     </div>
   )
 }

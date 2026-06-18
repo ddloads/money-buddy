@@ -50,6 +50,10 @@ class Bill(Base):
     category_id: Mapped[Optional[int]] = mapped_column(
         BigInteger, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    # Account this bill is paid from / covered by (e.g. a dedicated bills account).
+    funding_account_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     interest_rate: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True)
     remaining_balance: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

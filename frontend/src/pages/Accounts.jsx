@@ -177,6 +177,20 @@ export default function Accounts() {
                     </p>
                   </div>
                 </div>
+                {account.covered_bills_count > 0 && (
+                  <div className={`mt-3 flex items-center justify-between rounded-lg px-3 py-2 text-xs ${
+                    Number(account.balance) >= Number(account.covered_bills_due)
+                      ? 'bg-emerald-500/10 text-emerald-300'
+                      : 'bg-amber-500/10 text-amber-300'
+                  }`}>
+                    <span>
+                      Covers {account.covered_bills_count} bill{account.covered_bills_count !== 1 ? 's' : ''} · {format(account.covered_bills_due)} due
+                    </span>
+                    <span className="font-semibold">
+                      {Number(account.balance) >= Number(account.covered_bills_due) ? 'Funded' : 'Short'}
+                    </span>
+                  </div>
+                )}
                 <button
                   onClick={() => navigate(`/transactions?account=${account.id}`)}
                   className="mt-3 w-full text-xs text-emerald-400 hover:underline flex items-center justify-center gap-1.5 py-1.5"

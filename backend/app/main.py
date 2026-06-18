@@ -21,9 +21,11 @@ from app.api import (
     dashboard,
     goals,
     income,
+    recurring_transfers,
     reports,
     templates,
     transactions,
+    transfers,
     dev,
 )
 
@@ -62,6 +64,9 @@ async def lifespan(app: FastAPI):
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()",
                 "ALTER TABLE categories ADD COLUMN IF NOT EXISTS monthly_budget NUMERIC(12,2)",
                 "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS bill_id BIGINT REFERENCES bills(id) ON DELETE SET NULL",
+                "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS is_transfer BOOLEAN NOT NULL DEFAULT false",
+                "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS transfer_group VARCHAR(40)",
+                "ALTER TABLE bills ADD COLUMN IF NOT EXISTS funding_account_id BIGINT REFERENCES accounts(id) ON DELETE SET NULL",
             ]
             for stmt in _pg_migrations:
                 await conn.execute(text(stmt))
@@ -112,6 +117,8 @@ def create_app() -> FastAPI:
     app.include_router(income.router, prefix="/income", tags=["Income"])
     app.include_router(accounts.router, prefix="/accounts", tags=["Accounts"])
     app.include_router(transactions.router, prefix="/transactions", tags=["Transactions"])
+    app.include_router(transfers.router, prefix="/transfers", tags=["Transfers"])
+    app.include_router(recurring_transfers.router, prefix="/recurring-transfers", tags=["Transfers"])
     app.include_router(reports.router, prefix="/reports", tags=["Reports"])
     app.include_router(goals.router, prefix="/goals", tags=["Goals"])
     app.include_router(templates.router, prefix="/templates", tags=["Templates"])

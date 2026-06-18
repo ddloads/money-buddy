@@ -74,6 +74,32 @@ def test_goals_endpoints_exist_for_frontend_contract():
     assert "/goals/{goal_id}/contribute" in paths
 
 
+def test_transfer_endpoints_exist_for_frontend_contract():
+    paths = {route.path for route in app.routes}
+
+    assert "/transfers" in paths
+    assert "/recurring-transfers" in paths
+    assert "/recurring-transfers/run" in paths
+
+
+def test_bill_contract_supports_funding_account():
+    from app.schemas.bill import BillBase, BillUpdate
+
+    assert "funding_account_id" in BillBase.model_fields
+    assert "funding_account_id" in BillUpdate.model_fields
+
+
+def test_recurrence_advance_handles_month_clamp():
+    from datetime import date
+
+    from app.models.bill import RecurrenceInterval
+    from app.services.recurrence import advance_date
+
+    assert advance_date(date(2026, 1, 31), RecurrenceInterval.MONTHLY) == date(2026, 2, 28)
+    assert advance_date(date(2026, 6, 1), RecurrenceInterval.BIWEEKLY) == date(2026, 6, 15)
+    assert advance_date(date(2026, 6, 1), RecurrenceInterval.YEARLY) == date(2027, 6, 1)
+
+
 def test_bill_pay_accepts_account_for_reconciliation():
     from app.schemas.bill import BillPayRequest
 

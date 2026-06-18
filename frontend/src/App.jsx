@@ -12,6 +12,7 @@ import Categories from './pages/Categories'
 import Budget from './pages/Budget'
 import Accounts from './pages/Accounts'
 import Transactions from './pages/Transactions'
+import Transfers from './pages/Transfers'
 import Reports from './pages/Reports'
 import Goals from './pages/Goals'
 import Income from './pages/Income'
@@ -84,6 +85,7 @@ export default function App() {
         <Route path="income" element={<Income />} />
         <Route path="accounts" element={<Accounts />} />
         <Route path="transactions" element={<Transactions />} />
+        <Route path="transfers" element={<Transfers />} />
         <Route path="budget" element={<Budget />} />
         <Route path="reports" element={<Reports />} />
         <Route path="goals" element={<Goals />} />

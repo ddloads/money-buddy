@@ -10,7 +10,8 @@ import { useCurrency } from '../hooks/useCurrency'
 export default function PayBillModal({ bill, onConfirm, onCancel, loading }) {
   const { data: accounts = [] } = useAccounts()
   const { format } = useCurrency()
-  const [accountId, setAccountId] = useState('')
+  // Preselect the bill's linked funding account when one is set.
+  const [accountId, setAccountId] = useState(bill?.funding_account_id ? String(bill.funding_account_id) : '')
 
   if (!bill) return null
 

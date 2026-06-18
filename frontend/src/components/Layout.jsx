@@ -16,6 +16,7 @@ import {
   CalendarDaysIcon,
   BuildingLibraryIcon,
   ArrowsRightLeftIcon,
+  ArrowPathRoundedSquareIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore } from '../store/authStore'
 import { useAuth } from '../hooks/useAuth'
@@ -24,6 +25,7 @@ const sidebarLinks = [
   { to: '/dashboard', label: 'Dashboard', Icon: HomeIcon },
   { to: '/accounts', label: 'Accounts', Icon: BuildingLibraryIcon },
   { to: '/transactions', label: 'Transactions', Icon: ArrowsRightLeftIcon },
+  { to: '/transfers', label: 'Transfers', Icon: ArrowPathRoundedSquareIcon },
   { to: '/bills', label: 'Bills', Icon: DocumentTextIcon },
   { to: '/calendar', label: 'Calendar', Icon: CalendarDaysIcon },
   { to: '/income', label: 'Income', Icon: BanknotesIcon },

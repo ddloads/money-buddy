@@ -57,7 +57,11 @@ async def get_reports(
             func.coalesce(func.sum(Transaction.amount).filter(Transaction.amount > 0), 0).label("income"),
             func.coalesce(func.sum(Transaction.amount).filter(Transaction.amount < 0), 0).label("expenses"),
         )
-        .where(Transaction.user_id == current_user.id, Transaction.date >= since.date())
+        .where(
+            Transaction.user_id == current_user.id,
+            Transaction.date >= since.date(),
+            Transaction.is_transfer == False,  # noqa: E712
+        )
         .group_by("year", "month")
     )
     cf_by_ym = {
@@ -139,6 +143,7 @@ async def get_reports(
             Transaction.user_id == current_user.id,
             Transaction.date >= since.date(),
             Transaction.amount < 0,
+            Transaction.is_transfer == False,  # noqa: E712
         )
         .group_by(Transaction.category_id, Category.name, Category.color, Category.icon)
         .order_by(func.sum(Transaction.amount).asc())  # most negative (most spent) first

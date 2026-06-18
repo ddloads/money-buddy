@@ -184,9 +184,11 @@ async def list_transactions(
     if search:
         query = query.where(Transaction.description.ilike(f"%{search}%"))
     if type == "income":
-        query = query.where(Transaction.amount > 0)
+        query = query.where(Transaction.amount > 0, Transaction.is_transfer == False)  # noqa: E712
     elif type == "expense":
-        query = query.where(Transaction.amount < 0)
+        query = query.where(Transaction.amount < 0, Transaction.is_transfer == False)  # noqa: E712
+    elif type == "transfer":
+        query = query.where(Transaction.is_transfer == True)  # noqa: E712
     if start_date is not None:
         query = query.where(Transaction.date >= start_date)
     if end_date is not None:

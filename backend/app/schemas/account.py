@@ -35,6 +35,9 @@ class AccountRead(AccountBase):
     balance: Decimal
     transaction_count: int
     is_liability: bool
+    # Bills this account is set to cover (unpaid).
+    covered_bills_count: int = 0
+    covered_bills_due: Decimal = Decimal("0")
     created_at: datetime
     updated_at: datetime
 

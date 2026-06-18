@@ -150,6 +150,22 @@ export const goalsAPI = {
   delete: (id) => api.delete(`/goals/${id}`),
 }
 
+// ─── Transfers ───────────────────────────────────────────────────────────────
+
+export const transfersAPI = {
+  list: () => api.get('/transfers'),
+  create: (data) => api.post('/transfers', data),
+  delete: (group) => api.delete(`/transfers/${group}`),
+}
+
+export const recurringTransfersAPI = {
+  list: () => api.get('/recurring-transfers'),
+  create: (data) => api.post('/recurring-transfers', data),
+  update: (id, data) => api.put(`/recurring-transfers/${id}`, data),
+  delete: (id) => api.delete(`/recurring-transfers/${id}`),
+  run: () => api.post('/recurring-transfers/run'),
+}
+
 // ─── Reports ─────────────────────────────────────────────────────────────────
 
 export const reportsAPI = {

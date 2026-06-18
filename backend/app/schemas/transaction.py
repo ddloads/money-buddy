@@ -55,6 +55,8 @@ class TransactionRead(BaseModel):
     category_id: Optional[int] = None
     notes: Optional[str] = None
     bill_id: Optional[int] = None
+    is_transfer: bool = False
+    transfer_group: Optional[str] = None
     created_at: dt.datetime
     updated_at: dt.datetime
     category: Optional[CategoryRead] = None

@@ -31,6 +31,7 @@ const TYPE_FILTERS = [
   { value: '', label: 'All' },
   { value: 'income', label: 'Income' },
   { value: 'expense', label: 'Expenses' },
+  { value: 'transfer', label: 'Transfers' },
 ]
 
 function TxnModal({ txn, onClose }) {
@@ -348,12 +349,19 @@ export default function Transactions() {
                   <div key={txn.id} className="card-interactive p-3.5 flex items-center gap-3 group">
                     <div
                       className="h-9 w-9 rounded-lg flex items-center justify-center text-base flex-shrink-0"
-                      style={{ backgroundColor: txn.category?.color ? `${txn.category.color}26` : '#33415526' }}
+                      style={{ backgroundColor: txn.is_transfer ? '#3b82f626' : (txn.category?.color ? `${txn.category.color}26` : '#33415526') }}
                     >
-                      {txn.category?.icon || (txn.amount < 0 ? '💸' : '💰')}
+                      {txn.is_transfer ? '⇄' : (txn.category?.icon || (txn.amount < 0 ? '💸' : '💰'))}
                     </div>
-                    <button onClick={() => openEdit(txn)} className="min-w-0 flex-1 text-left">
-                      <p className="text-sm font-medium text-slate-100 truncate group-hover:text-emerald-300">{txn.description}</p>
+                    <button
+                      onClick={() => txn.is_transfer ? null : openEdit(txn)}
+                      className="min-w-0 flex-1 text-left"
+                      disabled={txn.is_transfer}
+                    >
+                      <p className="text-sm font-medium text-slate-100 truncate group-hover:text-emerald-300 flex items-center gap-1.5">
+                        {txn.description}
+                        {txn.is_transfer && <span className="badge-gray !py-0.5 !px-1.5 text-[10px]">Transfer</span>}
+                      </p>
                       <p className="text-xs text-slate-500 truncate">
                         {format(parseISO(String(txn.date)), 'MMM d, yyyy')}
                         {accountId ? '' : ` · ${accountName(txn.account_id)}`}
@@ -363,10 +371,12 @@ export default function Transactions() {
                     <span className={`text-sm font-bold flex-shrink-0 ${txn.amount < 0 ? 'text-slate-200' : 'text-emerald-400'}`}>
                       {txn.amount < 0 ? '-' : '+'}{fc(Math.abs(txn.amount))}
                     </span>
-                    <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
-                      <button onClick={() => openEdit(txn)} className="btn-ghost p-1.5" title="Edit"><PencilSquareIcon className="h-4 w-4" /></button>
-                      <button onClick={() => setDeleting(txn)} className="btn-ghost p-1.5 text-rose-400 hover:bg-rose-500/10" title="Delete"><TrashIcon className="h-4 w-4" /></button>
-                    </div>
+                    {!txn.is_transfer && (
+                      <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <button onClick={() => openEdit(txn)} className="btn-ghost p-1.5" title="Edit"><PencilSquareIcon className="h-4 w-4" /></button>
+                        <button onClick={() => setDeleting(txn)} className="btn-ghost p-1.5 text-rose-400 hover:bg-rose-500/10" title="Delete"><TrashIcon className="h-4 w-4" /></button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

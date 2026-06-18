@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models.account import Account, LIABILITY_TYPES
+from app.models.bill import Bill
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.schemas.account import (
@@ -47,7 +48,30 @@ async def _balances(db: AsyncSession, user_id: int) -> dict[int, tuple[Decimal, 
     return {row.account_id: (Decimal(str(row.total)), int(row.count)) for row in result.all()}
 
 
-def _to_read(account: Account, balance_delta: Decimal, count: int) -> AccountRead:
+async def _coverage(db: AsyncSession, user_id: int) -> dict[int, tuple[int, Decimal]]:
+    """Map account_id → (count, total amount) of unpaid bills funded by it."""
+    result = await db.execute(
+        select(
+            Bill.funding_account_id,
+            func.count(Bill.id).label("count"),
+            func.coalesce(func.sum(Bill.amount), 0).label("total"),
+        )
+        .where(
+            Bill.user_id == user_id,
+            Bill.is_paid == False,  # noqa: E712
+            Bill.funding_account_id.isnot(None),
+        )
+        .group_by(Bill.funding_account_id)
+    )
+    return {row.funding_account_id: (int(row.count), Decimal(str(row.total))) for row in result.all()}
+
+
+def _to_read(
+    account: Account,
+    balance_delta: Decimal,
+    count: int,
+    coverage: tuple[int, Decimal] = (0, Decimal("0")),
+) -> AccountRead:
     return AccountRead(
         id=account.id,
         user_id=account.user_id,
@@ -59,6 +83,8 @@ def _to_read(account: Account, balance_delta: Decimal, count: int) -> AccountRea
         balance=account.starting_balance + balance_delta,
         transaction_count=count,
         is_liability=account.is_liability,
+        covered_bills_count=coverage[0],
+        covered_bills_due=coverage[1],
         created_at=account.created_at,
         updated_at=account.updated_at,
     )
@@ -75,7 +101,11 @@ async def list_accounts(
     )
     accounts = result.scalars().all()
     balances = await _balances(db, current_user.id)
-    return [_to_read(a, *balances.get(a.id, (Decimal("0"), 0))) for a in accounts]
+    coverage = await _coverage(db, current_user.id)
+    return [
+        _to_read(a, *balances.get(a.id, (Decimal("0"), 0)), coverage.get(a.id, (0, Decimal("0"))))
+        for a in accounts
+    ]
 
 
 @router.get("/net-worth", response_model=NetWorthSummary)

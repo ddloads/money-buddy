@@ -9,10 +9,14 @@ export function normalizeBillFormData(data) {
   const remainingBalance = data.remaining_balance === '' || data.remaining_balance == null
     ? null
     : Number(data.remaining_balance)
+  const fundingAccountId = data.funding_account_id === '' || data.funding_account_id == null
+    ? null
+    : Number(data.funding_account_id)
 
   const normalized = {
     ...data,
     category_id: Number.isNaN(categoryId) ? null : categoryId,
+    funding_account_id: Number.isNaN(fundingAccountId) ? null : fundingAccountId,
     autopay_enabled: Boolean(data.autopay_enabled),
     is_recurring: recurrence !== '',
     recurrence_interval: recurrence || null,

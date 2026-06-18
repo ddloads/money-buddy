@@ -78,12 +78,15 @@ function ImportModal({ accounts, onClose }) {
   const [previewing, setPreviewing] = useState(false)
   const [error, setError] = useState(null)
   const [done, setDone] = useState(null)
+  // Map of row index → sign override: 1 = income, -1 = expense
+  const [typeOverrides, setTypeOverrides] = useState({})
 
   const handleFile = async (e) => {
     const f = e.target.files?.[0]
     setFile(f || null)
     setPreview(null)
     setError(null)
+    setTypeOverrides({})
     if (!f) return
     setPreviewing(true)
     try {
@@ -96,9 +99,28 @@ function ImportModal({ accounts, onClose }) {
     }
   }
 
+  const toggleType = (idx, currentAmount) => {
+    setTypeOverrides((prev) => {
+      const detectedSign = currentAmount >= 0 ? 1 : -1
+      const currentSign = prev[idx] ?? detectedSign
+      const newSign = currentSign === 1 ? -1 : 1
+      // If reverting to detected sign, remove the override
+      if (newSign === detectedSign) {
+        const next = { ...prev }
+        delete next[idx]
+        return next
+      }
+      return { ...prev, [idx]: newSign }
+    })
+  }
+
+  const getEffectiveSign = (idx, amount) => {
+    return typeOverrides[idx] ?? (amount >= 0 ? 1 : -1)
+  }
+
   const handleImport = () => {
     importTxns.mutate(
-      { accountId: Number(accountId), file },
+      { accountId: Number(accountId), file, typeOverrides },
       { onSuccess: (data) => setDone(data) }
     )
   }
@@ -106,7 +128,7 @@ function ImportModal({ accounts, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="modal-overlay" onClick={onClose} />
-      <div className="card p-6 w-full max-w-xl z-10 animate-slide-up max-h-[90vh] overflow-y-auto">
+      <div className="card p-6 w-full max-w-2xl z-10 animate-slide-up max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-white">Import transactions from CSV</h2>
           <button onClick={onClose} className="btn-ghost p-1"><XMarkIcon className="h-5 w-5" /></button>
@@ -140,7 +162,7 @@ function ImportModal({ accounts, onClose }) {
                   className="block w-full text-sm text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-emerald-500/15 file:text-emerald-300 file:font-medium hover:file:bg-emerald-500/25 file:cursor-pointer"
                 />
                 <p className="mt-1 text-xs text-slate-500">
-                  We auto-detect Date, Description, and Amount (or separate Debit/Credit) columns.
+                  We auto-detect Date, Description, and Amount (or separate Debit/Credit) columns. Toggle the type badge to override income vs. expense per row.
                 </p>
               </div>
 
@@ -155,19 +177,43 @@ function ImportModal({ accounts, onClose }) {
                     <span>Amount: <span className="text-slate-200">{preview.detected_columns.amount || '—'}</span></span>
                     <span className="ml-auto text-emerald-400">{preview.valid_rows}/{preview.total_rows} ready</span>
                   </div>
-                  <div className="max-h-56 overflow-y-auto divide-y divide-white/[0.04]">
-                    {preview.rows.slice(0, 50).map((row, i) => (
-                      <div key={i} className={`flex items-center gap-3 px-3 py-2 text-sm ${row.valid ? '' : 'opacity-50'}`}>
-                        <span className="text-slate-500 w-20 flex-shrink-0">
-                          {row.date ? format(parseISO(row.date), 'MMM d') : '—'}
-                        </span>
-                        <span className="text-slate-200 truncate flex-1">{row.description}</span>
-                        <span className={`flex-shrink-0 font-medium ${row.amount < 0 ? 'text-rose-300' : 'text-emerald-300'}`}>
-                          {row.amount != null ? fc(row.amount) : '—'}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="max-h-72 overflow-y-auto divide-y divide-white/[0.04]">
+                    {preview.rows.slice(0, 50).map((row, i) => {
+                      const effectiveSign = getEffectiveSign(i, row.amount ?? 0)
+                      const isIncome = effectiveSign === 1
+                      const isOverridden = typeOverrides[i] !== undefined
+                      return (
+                        <div key={i} className={`flex items-center gap-2 px-3 py-2 text-sm ${row.valid ? '' : 'opacity-50'}`}>
+                          <span className="text-slate-500 w-16 flex-shrink-0">
+                            {row.date ? format(parseISO(row.date), 'MMM d') : '—'}
+                          </span>
+                          <span className="text-slate-200 truncate flex-1">{row.description}</span>
+                          <span className={`flex-shrink-0 font-medium w-20 text-right ${isIncome ? 'text-emerald-300' : 'text-rose-300'}`}>
+                            {row.amount != null ? fc(Math.abs(row.amount) * effectiveSign) : '—'}
+                          </span>
+                          {row.valid && (
+                            <button
+                              onClick={() => toggleType(i, row.amount ?? 0)}
+                              title="Toggle income / expense"
+                              className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-medium border transition-colors ${
+                                isIncome
+                                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
+                                  : 'bg-rose-500/15 text-rose-300 border-rose-500/30 hover:bg-rose-500/25'
+                              } ${isOverridden ? 'ring-1 ring-offset-1 ring-offset-transparent ring-amber-400/60' : ''}`}
+                            >
+                              {isIncome ? 'Income' : 'Expense'}
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
+                  {Object.keys(typeOverrides).length > 0 && (
+                    <div className="px-3 py-2 bg-amber-500/10 border-t border-white/10 text-xs text-amber-300 flex items-center justify-between">
+                      <span>{Object.keys(typeOverrides).length} row{Object.keys(typeOverrides).length !== 1 ? 's' : ''} manually overridden</span>
+                      <button onClick={() => setTypeOverrides({})} className="underline hover:no-underline">Reset all</button>
+                    </div>
+                  )}
                 </div>
               )}
 

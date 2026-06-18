@@ -46,8 +46,8 @@ export function useDeleteTransaction() {
 export function useImportTransactions() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ accountId, file }) =>
-      transactionsAPI.import(accountId, file).then((r) => r.data),
+    mutationFn: ({ accountId, file, typeOverrides }) =>
+      transactionsAPI.import(accountId, file, typeOverrides).then((r) => r.data),
     onSuccess: () => invalidate(qc),
   })
 }

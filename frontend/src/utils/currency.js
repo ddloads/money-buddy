@@ -1,6 +1,6 @@
 export function formatAmount(amount, currency = 'USD') {
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency,
       minimumFractionDigits: 2,
@@ -14,7 +14,7 @@ export function formatAmount(amount, currency = 'USD') {
 export function getCurrencySymbol(currency = 'USD') {
   try {
     return (
-      new Intl.NumberFormat(undefined, { style: 'currency', currency })
+      new Intl.NumberFormat('en-US', { style: 'currency', currency })
         .formatToParts(0)
         .find((p) => p.type === 'currency')?.value || '$'
     )

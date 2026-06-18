@@ -267,13 +267,27 @@ async def preview_import(
 async def import_transactions(
     account_id: int = Form(...),
     file: UploadFile = File(...),
+    type_overrides: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ImportResult:
-    """Import all valid rows from a CSV into the given account."""
+    """Import all valid rows from a CSV into the given account.
+
+    type_overrides: optional JSON string mapping row index (str) to sign (1 = income, -1 = expense).
+    """
+    import json as _json
+
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Please upload a .csv file")
     await _get_account_or_404(db, account_id, current_user.id)
+
+    overrides: dict[int, int] = {}
+    if type_overrides:
+        try:
+            raw = _json.loads(type_overrides)
+            overrides = {int(k): int(v) for k, v in raw.items()}
+        except Exception:
+            pass
 
     contents = await file.read()
     _, rows = _parse_csv(contents)
@@ -282,15 +296,18 @@ async def import_transactions(
 
     imported = 0
     skipped = 0
-    for row in rows:
+    for idx, row in enumerate(rows):
         if not row.valid or row.amount is None or row.date is None:
             skipped += 1
             continue
+        amount = row.amount
+        if idx in overrides:
+            amount = abs(amount) * Decimal(overrides[idx])
         description = row.description or "(imported)"
         db.add(Transaction(
             user_id=current_user.id,
             account_id=account_id,
-            amount=row.amount,
+            amount=amount,
             date=row.date,
             description=description,
             category_id=match_category(matchers, description),

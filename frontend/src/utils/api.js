@@ -130,10 +130,13 @@ export const transactionsAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
-  import: (accountId, file) => {
+  import: (accountId, file, typeOverrides) => {
     const formData = new FormData()
     formData.append('account_id', accountId)
     formData.append('file', file)
+    if (typeOverrides && Object.keys(typeOverrides).length > 0) {
+      formData.append('type_overrides', JSON.stringify(typeOverrides))
+    }
     return api.post('/transactions/import', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
